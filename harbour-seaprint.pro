@@ -84,7 +84,8 @@ TRANSLATIONS += translations/harbour-seaprint-de.ts \
                 translations/harbour-seaprint-fr.ts \
                 translations/harbour-seaprint-es.ts \
                 translations/harbour-seaprint-nl.ts \
-                translations/harbour-seaprint-pl.ts
+                translations/harbour-seaprint-pl.ts \
+                translations/harbour-seaprint-it.ts
 
 HEADERS += \
     src/dbusadaptorbase.h \

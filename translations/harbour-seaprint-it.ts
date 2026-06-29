@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.1" language="it_IT">
+<TS version="2.1" language="it">
 <context>
     <name>AboutPage</name>
     <message>
@@ -90,6 +90,10 @@
     <message>
         <source>SeaPrint is free software released under the GNU General Public License (GPL), version 3 or later.</source>
         <translation>SeaPrint è software libero rilaciato sotto GNU General Public License (GPL), versione 3 e successive.</translation>
+    </message>
+    <message>
+        <source>Italian</source>
+        <translation>Italian</translation>
     </message>
 </context>
 <context>
@@ -1347,7 +1351,7 @@
     </message>
     <message>
         <source>Envelope Italian</source>
-        <translation>Italiano</translation>
+        <translation>Busta all&apos;italiana</translation>
     </message>
     <message>
         <source>198 x 275mm</source>
@@ -5043,7 +5047,7 @@
     </message>
     <message>
         <source>Unknown</source>
-        <translation type="unfinished"></translation>
+        <translation>Sconosciuto</translation>
     </message>
     <message>
         <source>Wrapper Added</source>
