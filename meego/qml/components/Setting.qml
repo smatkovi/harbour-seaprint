@@ -17,21 +17,23 @@ Item {
 
     property variant strings: parent.printer.strings
 
-    Component.onCompleted: parent.setInitialChoice(this)
+    id: setting
 
-    onChoiceChanged: parent.choiceMade(this)
+    Component.onCompleted: parent.setInitialChoice(setting)
+
+    onChoiceChanged: parent.choiceMade(setting)
 
     signal clicked()
     onClicked: {
         if (hasMenu)
         {
-            menu.open(this)
+            menu.open(setting)
         }
     }
 
     signal pressAndHold()
     onPressAndHold: {
-        resetMenu.open(this)
+        resetMenu.open(setting)
     }
 
     property alias displayValue: button.value

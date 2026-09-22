@@ -32,6 +32,34 @@ DROP_IMPORTS = [
 # upstream text exactly, so that a change upstream is noticed here rather than
 # silently dropped.
 FILE_PATCHES = {
+    "components/Setting.qml": [
+        # `this` in a QtQuick 1.1 signal handler is not the object -- it is the
+        # script's own global. So the setting handed the settings column
+        # something with no name and no choice, every choice was quietly
+        # dropped, and the job went out with no attributes at all: the page
+        # range could be set and had no effect.
+        ("""    Component.onCompleted: parent.setInitialChoice(this)
+
+    onChoiceChanged: parent.choiceMade(this)""",
+         """    id: setting
+
+    Component.onCompleted: parent.setInitialChoice(setting)
+
+    onChoiceChanged: parent.choiceMade(setting)"""),
+        ("            menu.open(this)", "            menu.open(setting)"),
+        ("        resetMenu.open(this)", "        resetMenu.open(setting)"),
+    ],
+    "components/ChoiceSetting.qml": [
+        # Same as in Setting.qml: `this` is not the setting here either, and
+        # the id of the base component's file cannot be seen from this one.
+        ("""Setting {
+    property var choices""",
+         """Setting {
+    id: choiceSetting
+
+    property var choices"""),
+        ("            menu.open(this)", "            menu.open(choiceSetting)"),
+    ],
     "components/RangeListInputDialog.qml": [
         # Object.keys() of an undefined value throws, and the value is
         # undefined until something has been typed. On Sailfish the throw is

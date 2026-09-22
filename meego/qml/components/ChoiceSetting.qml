@@ -4,6 +4,8 @@ import "../silica"
 import "../pages/utils.js" as Utils
 
 Setting {
+    id: choiceSetting
+
     property variant choices: parent.getChoices(name)
     property variant preferred_choices: []
     property string preferred_choice_suffix: ""
@@ -17,7 +19,7 @@ Setting {
     onClicked: {
         if(hasMenu)
         {
-            menu.open(this)
+            menu.open(choiceSetting)
         }
         else if(actual_choices.length != 0)
         {

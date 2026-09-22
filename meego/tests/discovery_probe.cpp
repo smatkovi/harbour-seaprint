@@ -36,8 +36,8 @@ class Watcher : public QObject
 
 public:
     Watcher(int seconds, const QString& url = QString(), const QString& file = QString(),
-            const QString& format = QString())
-        : _left(seconds), _printer(0), _file(file), _format(format), _printing(false)
+            const QString& format = QString(), const QString& pages = QString())
+        : _left(seconds), _printer(0), _file(file), _format(format), _pages(pages), _printing(false)
     {
         if(!url.isEmpty())
         {
@@ -92,9 +92,28 @@ private slots:
                     value.insert("value", _format);
                     jobParams.insert("document-format", value);
                 }
+                if(!_pages.isEmpty())
+                {
+                    // What the page-range setting builds: a list of
+                    // {low, high}, tagged rangeOfInteger.
+                    QVariantList ranges;
+                    for(const QString& part : _pages.split(","))
+                    {
+                        const QStringList ends = part.split("-");
+                        QVariantMap range;
+                        range.insert("low", ends.first().toInt());
+                        range.insert("high", ends.last().toInt());
+                        ranges.append(range);
+                    }
+                    QVariantMap value;
+                    value.insert("tag", int(IppMsg::IntegerRange));
+                    value.insert("value", ranges);
+                    jobParams.insert("page-ranges", value);
+                }
                 std::cout << "printing " << qPrintable(_file)
                           << (_format.isEmpty() ? " (format: auto)"
                                                 : qPrintable(" (format: " + _format + ")"))
+                          << (_pages.isEmpty() ? "" : qPrintable(", pages " + _pages))
                           << std::endl;
                 _printer->print(jobParams, _file);
                 return;
@@ -149,6 +168,7 @@ private:
     IppPrinter* _printer;
     QString _file;
     QString _format;
+    QString _pages;
     bool _printing;
 };
 
@@ -168,8 +188,9 @@ int main(int argc, char* argv[])
     const QString url = argc > 2 ? QString::fromLocal8Bit(argv[2]) : QString();
     const QString file = argc > 3 ? QString::fromLocal8Bit(argv[3]) : QString();
     const QString format = argc > 4 ? QString::fromLocal8Bit(argv[4]) : QString();
+    const QString pages = argc > 5 ? QString::fromLocal8Bit(argv[5]) : QString();
 
-    Watcher watcher(seconds, url, file, format);
+    Watcher watcher(seconds, url, file, format, pages);
     if(url.isEmpty())
     {
         IppDiscovery::instance()->discover();
