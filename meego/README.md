@@ -78,7 +78,7 @@ of its own that beats a context property of that name.
 | --- | --- |
 | `Sailfish.Pickers` | own file browser (`FilePickerPage.qml`, `filebrowser.cpp`) -- the N9 indexes pictures and music, not documents |
 | `Nemo.DBus` + connman for the WLAN name | `wifichecker.cpp`, wireless extensions on the kernel |
-| `Nemo.Notifications` | `InfoBanner` |
+| `Nemo.Notifications` | a banner drawn in QML (`InfoBanner` is in `com.nokia.extras`, a plugin this would then have to require) |
 | `Nemo.Configuration` | the same QML type name, over `QSettings` |
 | `PullDownMenu` | a menu button at the top right, as in the other ports here |
 | Silica icon names | `tintedimage.cpp` maps them to blanco's and tints them with `QPainter` (QtQuick 1.1 has no shader effects) |
@@ -86,6 +86,7 @@ of its own that beats a context property of that name.
 | cover page | nothing; Harmattan has none |
 | calligraconverter | nothing; no office formats on this device |
 | `QImageReader::setAutoTransform` | `compat/exif.cpp`, so photos are not printed sideways |
+| discovery of `_ipps._tcp` | left out: this device cannot do a modern printer's TLS, and an ipps entry would hide the ipp twin |
 
 ## The stand-ins are generated, not written
 
