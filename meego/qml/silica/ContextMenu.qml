@@ -65,6 +65,15 @@ Item {
         Column {
             id: column
             anchors { left: parent.left; right: parent.right }
+
+            // Harmattan's MenuItem calls parent.closeLayout() on itself when
+            // it is tapped -- that is how a menu closes after a choice.
+            // MenuLayout provides it; this column has to as well, or the call
+            // throws and the entry's own handler never runs: the setting
+            // could be opened but not changed.
+            function closeLayout() {
+                menu.close()
+            }
         }
     }
 }

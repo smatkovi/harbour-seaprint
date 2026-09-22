@@ -15,6 +15,7 @@
 //   DISPLAY=:0 ./menu_probe [1|2|3]
 #include <QApplication>
 #include <QDeclarativeComponent>
+#include <QDeclarativeEngine>
 #include <QDeclarativeContext>
 #include <QDeclarativeError>
 #include <QDeclarativeItem>
@@ -42,8 +43,23 @@ int main(int argc, char* argv[])
     // 5: no default-property alias at all. The items stay ordinary children
     //    of the holder and are moved into a Column inside the menu as they
     //    appear -- which also catches the ones a Repeater makes later.
+    // 6: the port's own ContextMenu.qml, as installed on the device, filled
+    //    by a Repeater exactly the way ChoiceSetting does it. This is the
+    //    colour-mode menu, without the rest of the app around it.
     QString body;
-    if(variant == 5)
+    if(variant == 6)
+    {
+        body =
+            "    property variant choices: ['color', 'monochrome', 'auto']\n"
+            "    ContextMenu {\n"
+            "        id: holder\n"
+            "        Repeater {\n"
+            "            model: page.choices\n"
+            "            MenuItem { text: modelData }\n"
+            "        }\n"
+            "    }\n";
+    }
+    else if(variant == 5)
     {
         body =
             "    Item {\n"
@@ -119,6 +135,7 @@ int main(int argc, char* argv[])
     const QString qml =
         "import QtQuick 1.1\n"
         "import com.nokia.meego 1.0\n"
+        + QString(variant == 6 ? "import \"silica\"\n" : "") +
         "Rectangle {\n"
         "    id: page\n"
         "    width: 854; height: 480\n"
@@ -130,7 +147,7 @@ int main(int argc, char* argv[])
         "        id: openTimer\n"
         "        interval: 1500\n"
         "        onTriggered: {\n"
-        + QString(variant == 1 ? "            menu.open()\n" : "            holder.open()\n") +
+        + QString(variant == 1 ? "            menu.open()\n" : "            holder.open(page)\n") +
         "            console.log('opened')\n"
         "        }\n"
         "    }\n"
@@ -139,8 +156,25 @@ int main(int argc, char* argv[])
     qDebug().nospace() << "--- QML ---\n" << qPrintable(qml) << "--- end ---";
 
     QDeclarativeView view;
+
+    // The stand-ins read their metrics from AppTheme and put their pop-ups in
+    // appWindow, both of which meego/main.cpp supplies.
+    QDeclarativeComponent themeComponent(view.engine(),
+        QUrl::fromLocalFile("/opt/harbour-seaprint/qml/context/Theme.qml"));
+    QObject* theme = themeComponent.create(view.rootContext());
+    if(theme)
+    {
+        theme->setParent(view.engine());
+        QDeclarativeEngine::setObjectOwnership(theme, QDeclarativeEngine::CppOwnership);
+    }
+    view.rootContext()->setContextProperty("AppTheme", theme);
+
     QDeclarativeComponent component(view.engine());
-    component.setData(qml.toUtf8(), QUrl("qrc:/menu.qml"));
+    // The base URL decides what a directory import means; the installed QML
+    // is where the stand-ins live.
+    component.setData(qml.toUtf8(),
+                      variant == 6 ? QUrl::fromLocalFile("/opt/harbour-seaprint/qml/menu-probe.qml")
+                                   : QUrl("qrc:/menu.qml"));
     QObject* object = component.create(view.rootContext());
     if(component.isError())
     {
@@ -154,8 +188,12 @@ int main(int argc, char* argv[])
     if(QDeclarativeItem* item = qobject_cast<QDeclarativeItem*>(object))
     {
         view.scene()->addItem(item);
+        // The stand-ins hang their pop-ups on this.
+        view.rootContext()->setContextProperty("appWindow", item);
     }
     view.showFullScreen();
+    view.raise();
+    view.activateWindow();
 
     QTimer::singleShot(6000, &app, SLOT(quit()));
     return app.exec();

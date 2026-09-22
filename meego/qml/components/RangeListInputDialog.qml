@@ -15,7 +15,7 @@ Dialog {
 
         TextField {
             id: valueField
-            acceptableInput: Object.keys(value).length !== 0
+            acceptableInput: value !== undefined && value.length !== 0
             width: parent.width
             placeholderText: "1,2,17-42"
             label: title

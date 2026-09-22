@@ -32,6 +32,14 @@ DROP_IMPORTS = [
 # upstream text exactly, so that a change upstream is noticed here rather than
 # silently dropped.
 FILE_PATCHES = {
+    "components/RangeListInputDialog.qml": [
+        # Object.keys() of an undefined value throws, and the value is
+        # undefined until something has been typed. On Sailfish the throw is
+        # swallowed with the binding; here it is one more line in the log
+        # every keystroke, and the Accept button never became usable.
+        ("            acceptableInput: Object.keys(value).length !== 0",
+         "            acceptableInput: value !== undefined && value.length !== 0"),
+    ],
     "pages/FirstPage.qml": [
         # Sailfish.Pickers' two picker pages. Harmattan has no such module, and
         # asking the gallery instead would find no PDFs: on the N9 tracker
