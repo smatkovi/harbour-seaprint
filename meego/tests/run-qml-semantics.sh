@@ -1,6 +1,13 @@
 #!/bin/sh
 # Builds and runs meego/tests/qml_semantics.cpp against a Qt 4 of the SDK.
 # No display is needed: the probe creates only a QtObject.
+#
+# This is the quick version. The answers that count come from the device's own
+# Qt 4.7.4, because Qt 4.8's QtDeclarative runs JavaScript on V8 and 4.7's on
+# JavaScriptCore:
+#
+#   meego/build.sh tools
+#   qemu-arm -L $SYSROOT build/meego/tools/qml_semantics
 set -e
 HERE=$(cd "$(dirname "$0")/../.." && pwd)
 # The Qt Simulator's Qt aborts without an X server even for a QCoreApplication

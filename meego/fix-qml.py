@@ -112,6 +112,15 @@ SUBST = [
     (r'^\s*allowedOrientations:\s*Orientation\.Landscape[^\n]*$', '    orientationLock: PageOrientation.LockLandscape'),
     (r'^\s*allowedOrientations:\s*defaultAllowedOrientations\s*$\n', ''),
     (r'^\s*defaultAllowedOrientations:[^\n]*$\n', ''),
+    # A Silica page can refuse the back gesture; a MeeGo page has no such
+    # property -- navigation is the toolbar's, and this port shows none, so
+    # the busy page cannot be left by mistake either way.
+    (r'^\s*backNavigation:[^\n]*$\n', ''),
+    # QtQuick 1.1's PageStack resolves a relative URL against its own
+    # directory, not against the file that asked: com.nokia.meego's
+    # PageStack.js calls Qt.createComponent(page) itself. Silica resolves it
+    # against the caller, so upstream can pass a bare name.
+    (r'pageStack\.(push|replace)\("([^"]+\.qml)"', r'pageStack.\1(Qt.resolvedUrl("\2")'),
     # PageStack takes a bool for "do not animate".
     (r'\bPageStackAction\.Immediate\b', 'true'),
     (r'\bPageStackAction\.Animated\b', 'false'),
@@ -134,6 +143,10 @@ SUBST = [
     # SilicaFlickable does for itself.
     (r'^(\s*)(Flickable|ListView|GridView) \{\s*$\n(\s*)(anchors\.fill: parent)',
      r'\1\2 {\n\3\4\n\3pressDelay: 150'),
+
+    # Qt 4.7's Qt.application knows only `active` and `layoutDirection`; the
+    # version is a root context property from meego/main.cpp.
+    (r'\bQt\.application\.version\b', 'appVersion'),
 
     # --- icons --------------------------------------------------------------
     # IconButton takes the source directly here; icon.source is a Silica

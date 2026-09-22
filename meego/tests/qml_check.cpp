@@ -23,6 +23,7 @@
 
 #include <cstdio>
 
+#include "clipboard.h"
 #include "compat/mgconfitem.h"
 #include "filebrowser.h"
 #include "ipptags.h"
@@ -95,6 +96,7 @@ int main(int argc, char* argv[])
     context->setContextProperty("SeaPrintSettings", Settings::instance());
     context->setContextProperty("RangeListChecker", RangeListChecker::instance());
     context->setContextProperty("FileBrowser", new FileBrowser(&engine));
+    context->setContextProperty("Clipboard", new Clipboard(&engine));
     context->setContextProperty("appVersion", QString("check"));
     context->setContextProperty("appDataDir", qmlDir);
 

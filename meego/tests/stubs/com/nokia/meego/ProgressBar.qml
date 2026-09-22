@@ -3,9 +3,11 @@ import QtQuick 1.1
 // only the API surface, so that the checker sees what the device has.
 Item {
     property variant flick
-    property int index
+    property bool indeterminate
+    property variant maximumValue
+    property variant minimumValue
     property bool offScreen
     property variant platformStyle
-    property bool running
     property variant style
+    property variant value
 }

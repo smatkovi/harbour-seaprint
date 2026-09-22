@@ -87,13 +87,33 @@ of its own that beats a context property of that name.
 | calligraconverter | nothing; no office formats on this device |
 | `QImageReader::setAutoTransform` | `compat/exif.cpp`, so photos are not printed sideways |
 
+## The stand-ins are generated, not written
+
+`meego/tests/stubs/com/nokia/meego` comes out of `meego/tests/make-stubs.sh`,
+which reads the real components in the SDK and writes out their API surface.
+Hand-written ones were worse than nothing: they accepted properties the real
+components have not got, so the checker passed and the device would not. The
+generated ones immediately found three such places -- `backNavigation` (a
+Silica property), `InfoBanner` (it is in `com.nokia.extras`, not in
+`com.nokia.meego`, so the notification is drawn here instead) and the slider's
+bounds.
+
 ## What is checked, and what is not
 
 Verified on the build machine: the QML (all 49 files load, against stand-ins
-for `com.nokia.meego`), PDF conversion to PWG, URF, PDF and PostScript with
-the device's own poppler and cairo under `qemu-arm`, and a full IPP
-Get-Printer-Attributes against CUPS's `ippeveprinter` as an ARM binary --
-106 attributes, nested collections and all, through the JSON stand-ins.
+generated from the real components), PDF conversion to PWG, URF, PDF and
+PostScript with the device's own poppler and cairo under `qemu-arm`, and a
+full IPP Get-Printer-Attributes against CUPS's `ippeveprinter` as an ARM
+binary -- 106 attributes, nested collections and all, through the JSON
+stand-ins.
+
+`meego/tests/qml_semantics.cpp` is built for ARM as well and run under
+`qemu-arm` against the device's own Qt 4.7.4, because Qt 4.8 answers some of
+its questions differently (its QtDeclarative runs JavaScript on V8, 4.7's on
+JavaScriptCore). That run confirms the copy semantics of `property variant`
+on the real Qt, and that `Object.keys`, `JSON`, `Array.isArray`, `filter`,
+`indexOf` and `openDatabaseSync` are all there. `Function.prototype.bind` is
+**not** -- nothing in the app uses it, but a future change must not.
 
 Not verified: the app running on a device. The N9 and N950 were unreachable
 while this was written. What that leaves open is the look of the pages

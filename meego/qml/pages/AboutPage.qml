@@ -54,7 +54,7 @@ Page {
             AboutLabel {
                 font.pixelSize: AppTheme.fontSizeLarge
                 color: AppTheme.highlightColor
-                text: "SeaPrint v" + Qt.application.version
+                text: "SeaPrint v" + appVersion
             }
 
             AboutLabel {

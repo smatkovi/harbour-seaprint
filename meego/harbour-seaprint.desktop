@@ -8,5 +8,6 @@ Terminal=false
 Categories=Utility;
 MimeType=application/pdf;application/postscript;text/plain;image/jpeg;image/png;image/gif;image/tiff;image/bmp;image/svg+xml;
 X-Osso-Type=application/x-executable
-X-Osso-Service=net.attah.seaprint
+# No X-Osso-Service: with one, the launcher tries to start the app over D-Bus
+# instead of running Exec, and the file the user picked would never arrive.
 X-MeeGo-Logical-Id=SeaPrint

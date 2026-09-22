@@ -92,11 +92,23 @@ void WifiChecker::poll()
         }
     }
 
-    if(connected != _connected || ssid != _ssid)
+    const bool connectedChangedNow = connected != _connected;
+    const bool ssidChangedNow = ssid != _ssid;
+
+    if(connectedChangedNow || ssidChangedNow)
     {
         _connected = connected;
         _ssid = ssid;
         qDebug() << "wifi" << _connected << _ssid;
-        emit changed();
+    }
+    // The favourites are keyed by network name, so the pages want to know
+    // about the two changes separately.
+    if(connectedChangedNow)
+    {
+        emit connectedChanged();
+    }
+    if(ssidChangedNow)
+    {
+        emit ssidChanged();
     }
 }

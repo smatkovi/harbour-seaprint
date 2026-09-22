@@ -85,6 +85,18 @@ int main(int argc, char* argv[])
         "        copy['x'] = 1\n"
         "        jobParams = copy\n"
         "        console.log('9 assignment back:', jobParams.hasOwnProperty('x'))\n"
+        // What the pages expect of the JavaScript engine. Qt 4.7's QML runs on
+        // JavaScriptCore, Qt 4.8's on V8, so this has to be answered by the
+        // device's own Qt -- build it for ARM and run it under qemu-arm.
+        "        console.log('10 Object.keys:', typeof Object.keys)\n"
+        "        console.log('11 JSON:', typeof JSON, typeof JSON.stringify, typeof JSON.parse)\n"
+        "        console.log('12 Array.isArray:', typeof Array.isArray)\n"
+        "        console.log('13 Array.prototype.filter:', typeof [].filter, typeof [].indexOf,\n"
+        "                    typeof [].forEach, typeof [].map)\n"
+        "        console.log('14 String.prototype.trim:', typeof ''.trim)\n"
+        "        console.log('15 Function.prototype.bind:', typeof (function(){}).bind)\n"
+        "        console.log('16 openDatabaseSync:', typeof openDatabaseSync)\n"
+        "        console.log('17 round trip:', JSON.stringify({a: [1, {b: 2}]}))\n"
         "    }\n"
         "}\n";
 

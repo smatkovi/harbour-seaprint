@@ -77,7 +77,19 @@ IppDiscovery* IppDiscovery::instance()
 
 void IppDiscovery::discover() {
     // Not a braced list: Qt 4.7's QList has no initializer-list constructor.
-    sendQuery(PTR, QStringList() << "_ipp._tcp.local" << "_ipps._tcp.local");
+    QStringList services;
+    services << "_ipp._tcp.local";
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    services << "_ipps._tcp.local";
+#else
+    // Harmattan is left out of the encrypted half on purpose. A printer that
+    // advertises both is listed as ipps:// by update(), and the N9's curl
+    // (7.21 against OpenSSL 0.9.8) cannot negotiate with a printer made this
+    // decade -- so the entry would be there and simply never work, with no way
+    // for the user to reach the ipp:// twin. Plain IPP on port 631 is what
+    // this device can do; an ipps address can still be typed in by hand.
+#endif
+    sendQuery(PTR, services);
 }
 
 void IppDiscovery::reset() {

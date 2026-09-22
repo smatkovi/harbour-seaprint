@@ -35,8 +35,8 @@ Item {
             id: slider
             width: parent.width
             enabled: root.enabled
-            minimum: root.minimumValue
-            maximum: root.maximumValue
+            minimumValue: root.minimumValue
+            maximumValue: root.maximumValue
             stepSize: root.stepSize
             value: root.value
             onValueChanged: if (value !== root.value) root.value = value

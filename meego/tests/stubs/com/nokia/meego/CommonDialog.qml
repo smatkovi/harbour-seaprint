@@ -4,14 +4,8 @@ import QtQuick 1.1
 Item {
     property variant buttons
     property variant content
-    property variant delegate
-    property int listViewHeight
-    property int maxListViewHeight
-    property variant model
     property variant oldParent
     property variant platformStyle
-    property bool selected
-    property int selectedIndex
     property int status
     property variant style
     property variant title

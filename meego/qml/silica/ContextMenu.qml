@@ -8,7 +8,10 @@ import com.nokia.meego 1.0 as Meego
 // settings), so they are routed into the menu's layout.
 Item {
     id: root
-    visible: false
+
+    // Takes no room where it is declared: the menu itself lives in the window.
+    width: 0
+    height: 0
 
     property alias entries: layout.children
     default property alias content: layout.children
@@ -22,6 +25,11 @@ Item {
 
     Meego.Menu {
         id: menu
+        // A Menu anchors its pane to its parent, and the settings assign their
+        // ContextMenu to a property, where an object has no parent at all --
+        // the menu would open into nothing. appWindow is the root object, put
+        // in the context by meego/main.cpp.
+        parent: appWindow
         Meego.MenuLayout { id: layout }
     }
 }

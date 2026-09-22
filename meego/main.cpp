@@ -18,6 +18,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QTextCodec>
+#include <QLocale>
 #include <QTranslator>
 #include <QUrl>
 #include <QVariant>
@@ -27,6 +28,7 @@
 #include <QDBusConnection>
 
 #include "compat/QLoggingCategory"
+#include "clipboard.h"
 #include "compat/mgconfitem.h"
 #include "filebrowser.h"
 #include "ipptags.h"
@@ -136,7 +138,9 @@ int main(int argc, char *argv[])
     const QString data = dataDir();
 
     QTranslator translator;
-    if(translator.load(QLocale::system().name(), data + "/translations"))
+    // harbour-seaprint-de.qm and friends: QTranslator drops the country part
+    // by itself if there is no catalogue for it.
+    if(translator.load("harbour-seaprint-" + QLocale::system().name(), data + "/translations"))
     {
         app.installTranslator(&translator);
     }
@@ -160,6 +164,10 @@ int main(int argc, char *argv[])
     context->setContextProperty("SeaPrintSettings", Settings::instance());
     context->setContextProperty("RangeListChecker", RangeListChecker::instance());
     context->setContextProperty("FileBrowser", new FileBrowser(&view));
+    // Filled in below, once the root object exists; declared here so that the
+    // bindings that read it evaluate to null instead of erroring on the way up.
+    context->setContextProperty("appWindow", (QObject*)0);
+    context->setContextProperty("Clipboard", new Clipboard(&view));
     context->setContextProperty("appVersion", QStringLiteral(SEAPRINT_VERSION));
     context->setContextProperty("appDataDir", data);
 
@@ -179,6 +187,12 @@ int main(int argc, char *argv[])
     view.engine()->addImportPath(data + "/qml");
     view.setResizeMode(QDeclarativeView::SizeRootObjectToView);
     view.setSource(QUrl::fromLocalFile(data + "/qml/harbour-seaprint.qml"));
+
+    // The window itself, for the stand-ins that have to put a pop-up
+    // somewhere: a com.nokia.meego Menu anchors its pane to its parent item,
+    // and a ContextMenu assigned to a property (as the settings do) has no
+    // parent at all, so it would open into nothing.
+    context->setContextProperty("appWindow", view.rootObject());
 
     FreedesktopDBusAdaptor freedesktopDbus(&view);
     SeaPrintDBusAdaptor seaprintDbus(&view);

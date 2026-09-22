@@ -8,10 +8,8 @@ Item {
     property real oldPosition
     property int orientation
     property variant platformMouseAnchors
-    property variant platformStyle
     property variant pressed
     property variant stepSize
-    property variant style
     property variant value
     property int valueIndicatorMargin
     property string valueIndicatorPosition

@@ -16,8 +16,11 @@
 class WifiChecker : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(bool connected READ connected NOTIFY changed)
-    Q_PROPERTY(QString ssid READ ssid NOTIFY changed)
+    // One signal per property, not a shared changed(): the pages listen with
+    // Connections { target: wifi; onConnectedChanged: ...; onSsidChanged: ... },
+    // and those handlers are looked up as signals of those exact names.
+    Q_PROPERTY(bool connected READ connected NOTIFY connectedChanged)
+    Q_PROPERTY(QString ssid READ ssid NOTIFY ssidChanged)
 
 public:
     explicit WifiChecker(QObject* parent = 0);
@@ -26,7 +29,8 @@ public:
     QString ssid() const { return _ssid; }
 
 signals:
-    void changed();
+    void connectedChanged();
+    void ssidChanged();
 
 private slots:
     void poll();

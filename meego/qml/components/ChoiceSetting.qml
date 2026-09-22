@@ -21,7 +21,7 @@ Setting {
         }
         else if(actual_choices.length != 0)
         {
-            var dialog = pageStack.push("LargeChoiceDialog.qml",
+            var dialog = pageStack.push(Qt.resolvedUrl("LargeChoiceDialog.qml"),
                                         {name:name, choice: choice != undefined ? choice : default_choice, choices: actual_choices,
                                          preferred_choices: preferred_choices, preferred_choice_suffix: preferred_choice_suffix,
                                          strings: strings})

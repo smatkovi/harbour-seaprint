@@ -44,6 +44,8 @@ Item {
 
     Meego.Menu {
         id: menu
+        // The pane belongs to the window, not to this little button.
+        parent: appWindow
         Meego.MenuLayout { id: layout }
     }
 }

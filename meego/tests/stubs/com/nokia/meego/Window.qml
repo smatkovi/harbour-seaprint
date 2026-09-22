@@ -6,15 +6,8 @@ Item {
     property variant color
     property int heightDelta
     property variant inPortrait
-    property variant initialPage
-    property variant pageStack
-    property variant platformStyle
-    property variant platformToolBarHeight
     property bool portrait
-    property bool showStatusBar
-    property bool showToolBar
     property variant softwareInputPanelRect
-    property variant style
     signal orientationChangeAboutToStart()
     signal orientationChangeFinished()
     signal orientationChangeStarted()

@@ -11,7 +11,6 @@ Page {
     }
 
     property variant printer
-    backNavigation: false
     Connections {
         target: printer
         onJobFinished: {

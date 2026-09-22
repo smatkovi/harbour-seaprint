@@ -5,7 +5,6 @@ import "../components"
 
 Page {
     orientationLock: PageOrientation.Automatic
-    backNavigation: false
 
     Flickable {
         anchors.fill: parent

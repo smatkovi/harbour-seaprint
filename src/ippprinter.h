@@ -95,6 +95,15 @@ signals:
     void busyMessageChanged();
     void progressChanged();
 
+private slots:
+    // These two are connected to the worker by name. Qt 5 could take the
+    // address of an ordinary member function; the SIGNAL/SLOT macros of Qt 4
+    // need moc to have seen them, and a private member function is invisible
+    // to it -- the connection would fail at run time with "no such slot" and
+    // the busy page would stay empty.
+    void setBusyMessage(QString msg);
+    void setProgress(qint64 sent, qint64 total);
+
 public slots:
     // QML hands the job settings over as a JavaScript object. Qt 5 would turn
     // that into a QJsonObject on its own; QtDeclarative makes a QVariantMap of
@@ -124,9 +133,6 @@ private:
     QJsonObject opAttrs();
 
     void adjustRasterSettings(QString filename, QString mimeType, QJsonObject& jobAttrs, PrintParameters& Params);
-
-    void setBusyMessage(QString msg);
-    void setProgress(qint64 sent, qint64 total);
 
     bool isAllowedAddress(QUrl addr);
 

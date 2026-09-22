@@ -57,6 +57,7 @@ APP_SRC="src/dbusadaptorbase.cpp \
  meego/wifichecker.cpp \
  meego/tintedimage.cpp \
  meego/filebrowser.cpp \
+ meego/clipboard.cpp \
  meego/compat/qt4json.cpp \
  meego/compat/qt4mime.cpp \
  meego/compat/qt4logging.cpp \
@@ -77,6 +78,7 @@ MOC_HEADERS="src/convertchecker.h \
  meego/wifichecker.h \
  meego/tintedimage.h \
  meego/filebrowser.h \
+ meego/clipboard.h \
  meego/ipptags.h \
  meego/compat/mgconfitem.h"
 
@@ -160,7 +162,7 @@ MK=$OUT/Makefile
             echo "$o: \$(SRC)/$s"; printf '\t$(CXX) $(CXXFLAGS) -c $< -o $@\n'
         done
         echo "OBJS=$objs"
-        echo "all: pdf2printable ippposter ipp_probe"
+        echo "all: pdf2printable ippposter ipp_probe qml_semantics"
         echo "pdf2printable: \$(SRC)/ppm2pwg/utils/pdf2printable_main.cpp \$(OBJS)"
         printf '\t$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ -lcurl -lglib-2.0 -lgobject-2.0 -ldl -lpthread\n'
         echo "ippposter: \$(SRC)/ppm2pwg/utils/ippposter.cpp \$(OBJS)"
@@ -170,6 +172,12 @@ MK=$OUT/Makefile
         echo "qt4json.o: \$(SRC)/meego/compat/qt4json.cpp"; printf '\t$(CXX) $(CXXFLAGS) -c $< -o $@\n'
         echo "ipp_probe: \$(SRC)/meego/tests/ipp_probe.cpp \$(OBJS) ippmsg.o qt4json.o"
         printf '\t$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ -lQtCore -lcurl -lglib-2.0 -lgobject-2.0 -ldl -lpthread\n'
+        # The QML semantics probe, against the device's own Qt 4.7.4 under
+        # qemu-arm: Qt 4.8 answers some of its questions differently, because
+        # its QtDeclarative runs JavaScript on V8 rather than on JSC.
+        echo "qml_semantics.moc: \$(SRC)/meego/tests/qml_semantics.cpp"; printf '\t$(MOC) $< -o $@\n'
+        echo "qml_semantics: \$(SRC)/meego/tests/qml_semantics.cpp qml_semantics.moc"
+        printf '\t$(CXX) $(CXXFLAGS) -I. $(LDFLAGS) -o $@ $< -lQtDeclarative -lQtScript -lQtGui -lQtNetwork -lQtCore -lpthread\n'
     else
         objs=
         for s in $APP_SRC; do
