@@ -121,6 +121,17 @@ int main(int argc, char *argv[])
     // otherwise, which would mangle every accented string in the app.
     QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
 
+    // /tmp on this device is a 4 MB tmpfs that the whole system shares, and
+    // the conversion writes whole rasterised pages through QTemporaryFile --
+    // an A4 page at 600 dpi is many times that. Filling it does not only
+    // break printing: everything else that needs a temporary file, down to
+    // the mail client's downloads, stops working too. So the app keeps its
+    // temporary files in its own cache directory, which is on the data
+    // partition. QDir::tempPath() reads TMPDIR.
+    const QString tempDir = QDir::homePath() + "/.cache/harbour-seaprint/tmp";
+    QDir().mkpath(tempDir);
+    qputenv("TMPDIR", tempDir.toLocal8Bit());
+
     app.setOrganizationName(QStringLiteral("net.attah"));
     app.setApplicationName(QStringLiteral("harbour-seaprint"));
     app.setApplicationVersion(QStringLiteral(SEAPRINT_VERSION));
