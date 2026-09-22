@@ -141,7 +141,8 @@ guiprobe)
     mkdir -p "$OUT"
     $MOC "$HERE/meego/tests/model_probe.cpp" -o "$OUT/model_probe.moc"
     $CXX $CXXFLAGS -I"$OUT" $LDFLAGS -o "$OUT/model_probe" "$HERE/meego/tests/model_probe.cpp" $LIBS
-    echo "== built $OUT/model_probe (run it on the device with DISPLAY=:0)"
+    $CXX $CXXFLAGS $LDFLAGS -o "$OUT/menu_probe" "$HERE/meego/tests/menu_probe.cpp" $LIBS
+    echo "== built $OUT/model_probe and $OUT/menu_probe (run them on the device with DISPLAY=:0)"
     exit 0
     ;;
 probe)
@@ -270,7 +271,8 @@ guiprobe)
     mkdir -p "$OUT"
     $MOC "$HERE/meego/tests/model_probe.cpp" -o "$OUT/model_probe.moc"
     $CXX $CXXFLAGS -I"$OUT" $LDFLAGS -o "$OUT/model_probe" "$HERE/meego/tests/model_probe.cpp" $LIBS
-    echo "== built $OUT/model_probe (run it on the device with DISPLAY=:0)"
+    $CXX $CXXFLAGS $LDFLAGS -o "$OUT/menu_probe" "$HERE/meego/tests/menu_probe.cpp" $LIBS
+    echo "== built $OUT/model_probe and $OUT/menu_probe (run them on the device with DISPLAY=:0)"
     exit 0
     ;;
 probe)
@@ -308,7 +310,8 @@ guiprobe)
     mkdir -p "$OUT"
     $MOC "$HERE/meego/tests/model_probe.cpp" -o "$OUT/model_probe.moc"
     $CXX $CXXFLAGS -I"$OUT" $LDFLAGS -o "$OUT/model_probe" "$HERE/meego/tests/model_probe.cpp" $LIBS
-    echo "== built $OUT/model_probe (run it on the device with DISPLAY=:0)"
+    $CXX $CXXFLAGS $LDFLAGS -o "$OUT/menu_probe" "$HERE/meego/tests/menu_probe.cpp" $LIBS
+    echo "== built $OUT/model_probe and $OUT/menu_probe (run them on the device with DISPLAY=:0)"
     exit 0
     ;;
 probe)

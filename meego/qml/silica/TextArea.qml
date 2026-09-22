@@ -1,7 +1,8 @@
 import QtQuick 1.1
 import com.nokia.meego 1.0 as Meego
-// Silica's TextArea: the MeeGo one with a label above it.
-Item {
+// Silica's TextArea: the MeeGo one with a label above it. A FocusScope for
+// the same reason as TextField.
+FocusScope {
     id: root
     property alias text: field.text
     property alias readOnly: field.readOnly
@@ -38,6 +39,7 @@ Item {
             id: field
             x: AppTheme.horizontalPageMargin
             width: parent.width - 2 * AppTheme.horizontalPageMargin
+            focus: true
         }
     }
 }

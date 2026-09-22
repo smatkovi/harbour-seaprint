@@ -1,7 +1,13 @@
 import QtQuick 1.1
 import com.nokia.meego 1.0 as Meego
 // Silica's TextField: the MeeGo one with a label above it.
-Item {
+//
+// A FocusScope, not an Item: the pages set focus:true on this (or call
+// forceActiveFocus), and only a focus scope passes that on to the input
+// inside. Without it nothing has active focus, and Harmattan shows the
+// keyboard to whatever has -- which is why the page-range field stayed
+// unreachable.
+FocusScope {
     id: root
     property alias text: field.text
     property alias placeholderText: field.placeholderText
@@ -40,6 +46,7 @@ Item {
             id: field
             x: AppTheme.horizontalPageMargin
             width: parent.width - 2 * AppTheme.horizontalPageMargin
+            focus: true
             Keys.onReturnPressed: root.accepted()
             Keys.onEnterPressed: root.accepted()
         }

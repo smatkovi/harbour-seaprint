@@ -1,12 +1,16 @@
 import QtQuick 1.1
 import com.nokia.meego 1.0 as Meego
-// Silica's PullDownMenu. Harmattan has no pull-down gesture, so the same
-// entries are reached through a button at the top right of the page, where a
-// MeeGo user looks for a menu anyway -- the same arrangement as in the other
-// ports of Sailfish apps in this family.
+
+// Silica's PullDownMenu. Harmattan has no pull-down gesture, so the entries
+// are reached through a button at the top right of the page, where a MeeGo
+// user looks for a menu anyway.
+//
+// The entries are collected rather than aliased, for the reason spelled out
+// in ContextMenu.qml.
 Item {
     id: root
-    default property alias entries: layout.children
+
+    property bool _moving: false
 
     // The button belongs to the page, not to the flickable the menu was
     // declared in, so it does not scroll away with the content.
@@ -17,35 +21,66 @@ Item {
             page = page.parent
         if (page)
             root.parent = page
+        _collect()
     }
+
+    function _collect() {
+        if (_moving)
+            return
+        _moving = true
+        var moved = true
+        while (moved) {
+            moved = false
+            var kids = root.children
+            for (var i = 0; i < kids.length; i++) {
+                if (kids[i] !== menu && kids[i] !== button) {
+                    kids[i].parent = column
+                    moved = true
+                    break
+                }
+            }
+        }
+        _moving = false
+    }
+
+    onChildrenChanged: _collect()
 
     anchors { top: parent ? parent.top : undefined; right: parent ? parent.right : undefined }
     width: AppTheme.itemSizeSmall
     height: AppTheme.itemSizeSmall
     z: 100
 
-    Rectangle {
+    Item {
+        id: button
         anchors.fill: parent
-        color: AppTheme.highlightColor
-        opacity: area.pressed ? 0.3 : 0
-        radius: 4
-    }
-    Text {
-        anchors.centerIn: parent
-        text: "⋮"
-        color: AppTheme.highlightColor
-        font.pixelSize: AppTheme.fontSizeLarge
-    }
-    MouseArea {
-        id: area
-        anchors.fill: parent
-        onClicked: menu.open()
+
+        Rectangle {
+            anchors.fill: parent
+            color: AppTheme.highlightColor
+            opacity: area.pressed ? 0.3 : 0
+            radius: 4
+        }
+        Text {
+            anchors.centerIn: parent
+            text: "⋮"
+            color: AppTheme.highlightColor
+            font.pixelSize: AppTheme.fontSizeLarge
+        }
+        MouseArea {
+            id: area
+            anchors.fill: parent
+            onClicked: menu.open()
+        }
     }
 
     Meego.Menu {
         id: menu
         // The pane belongs to the window, not to this little button.
         parent: appWindow
-        Meego.MenuLayout { id: layout }
+
+        Column {
+            id: column
+            anchors { left: parent.left; right: parent.right }
+        }
     }
 }
