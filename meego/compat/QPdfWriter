@@ -1,0 +1,33 @@
+// Qt 4 has no QPdfWriter; QPrinter writes the same PDF.
+//
+// The paint device has to carry the page size in points and the resolution the
+// caller asks for, because the conversion code lays text and images out in
+// device pixels and then hands the file to pdf2printable.
+#pragma once
+#include <QPrinter>
+#include <QString>
+#include <QMarginsF>
+#include "QPageSize"
+
+class QPdfWriter : public QPrinter
+{
+public:
+    QPdfWriter(const QString& fileName) : QPrinter(QPrinter::HighResolution)
+    {
+        setOutputFormat(QPrinter::PdfFormat);
+        setOutputFileName(fileName);
+        setFullPage(true);
+    }
+
+    void setPageSize(const QPageSize& pageSize)
+    {
+        QPrinter::setPaperSize(pageSize.sizePoints(), QPrinter::Point);
+    }
+
+    // Qt 5 takes millimetres here, and the one caller asks for none at all.
+    void setMargins(const QMarginsF& margins)
+    {
+        QPrinter::setPageMargins(margins.left(), margins.top(),
+                                 margins.right(), margins.bottom(), QPrinter::Millimeter);
+    }
+};

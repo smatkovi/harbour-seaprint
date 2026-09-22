@@ -1,0 +1,24 @@
+# Stand-ins for com.nokia.meego, used only by meego/tests/check-qml.sh.
+#
+# The real components live on the device (and in the SDK, in a build of Qt this
+# machine cannot run headlessly). These have the same names and the properties
+# the port assigns to, which is what the check is about: that every page parses
+# and that nothing is assigned to a property that does not exist.
+Page 1.0 Page.qml
+PageStackWindow 1.0 PageStackWindow.qml
+PageStack 1.0 PageStack.qml
+Menu 1.0 Menu.qml
+MenuLayout 1.0 MenuLayout.qml
+MenuItem 1.0 MenuItem.qml
+Button 1.0 Button.qml
+Switch 1.0 Switch.qml
+TextField 1.0 TextField.qml
+TextArea 1.0 TextArea.qml
+Slider 1.0 Slider.qml
+BusyIndicator 1.0 BusyIndicator.qml
+BusyIndicatorStyle 1.0 BusyIndicatorStyle.qml
+InfoBanner 1.0 InfoBanner.qml
+SelectionDialog 1.0 SelectionDialog.qml
+Sheet 1.0 Sheet.qml
+ToolBar 1.0 ToolBar.qml
+ToolIcon 1.0 ToolIcon.qml

@@ -11,7 +11,17 @@ class IppDiscovery : public  QStringListModel
 public:
     static IppDiscovery* instance();
 
-    Q_PROPERTY(QStringList favourites MEMBER _favourites NOTIFY favouritesChanged)
+    Q_PROPERTY(QStringList favourites READ favourites WRITE setFavourites NOTIFY favouritesChanged)
+
+    QStringList favourites() const {return _favourites;}
+    void setFavourites(const QStringList& favourites)
+    {
+        if(favourites != _favourites)
+        {
+            _favourites = favourites;
+            emit favouritesChanged();
+        }
+    }
 
     Q_INVOKABLE void discover();
     Q_INVOKABLE void reset();

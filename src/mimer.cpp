@@ -26,8 +26,9 @@ const QString Mimer::ODP = "application/vnd.oasis.opendocument.presentation";
 
 const QString Mimer::Plaintext = "text/plain";
 
-const QStringList Mimer::RasterFormats = {PWG, URF};
-const QStringList Mimer::OfficeFormats = {DOC, DOCX, RTF, RTF_APP, ODT, PPT, PPTX, ODP};
+const QStringList Mimer::RasterFormats = QStringList() << PWG << URF;
+const QStringList Mimer::OfficeFormats = QStringList() << DOC << DOCX << RTF << RTF_APP
+                                                      << ODT << PPT << PPTX << ODP;
 
 Mimer::Mimer()
 {

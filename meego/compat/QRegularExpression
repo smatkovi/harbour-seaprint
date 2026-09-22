@@ -1,0 +1,45 @@
+// The one regex the app runs (splitting a printer's localisation strings)
+// expressed with Qt 4's QRegExp, behind the Qt 5 names.
+#pragma once
+#include <QRegExp>
+#include <QString>
+#include <QStringList>
+
+class QRegularExpressionMatch
+{
+public:
+    QRegularExpressionMatch() : m_hasMatch(false) {}
+    QRegularExpressionMatch(bool hasMatch, const QStringList& captured)
+        : m_hasMatch(hasMatch), m_captured(captured) {}
+
+    bool hasMatch() const { return m_hasMatch; }
+    QString captured(int n = 0) const { return m_captured.value(n); }
+    int lastCapturedIndex() const { return m_captured.size()-1; }
+
+private:
+    bool m_hasMatch;
+    QStringList m_captured;
+};
+
+class QRegularExpression
+{
+public:
+    QRegularExpression() {}
+    explicit QRegularExpression(const QString& pattern) : m_re(pattern) {}
+
+    QRegularExpressionMatch match(const QString& subject) const
+    {
+        QRegExp re = m_re;
+        if(re.indexIn(subject) == -1)
+        {
+            return QRegularExpressionMatch();
+        }
+        return QRegularExpressionMatch(true, re.capturedTexts());
+    }
+
+    bool isValid() const { return m_re.isValid(); }
+    QString pattern() const { return m_re.pattern(); }
+
+private:
+    QRegExp m_re;
+};

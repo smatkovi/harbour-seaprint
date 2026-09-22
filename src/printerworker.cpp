@@ -4,6 +4,8 @@
 #include "mimer.h"
 #include "settings.h"
 #include <QImage>
+#include <QImageReader>
+#include <QLoggingCategory>
 #include <QMatrix>
 #include <QPainter>
 #include <QTextDocument>
@@ -16,6 +18,18 @@
 #include "baselinify.h"
 #include <fstream>
 #include <iostream>
+
+// Qt 5.5 and later turn a photo the right way up by themselves; before that
+// the EXIF orientation has to be read and applied (meego/compat/exif.cpp).
+// Both calls are no-ops on the side that does not need them, so the code below
+// reads the same in either build.
+#if QT_VERSION >= QT_VERSION_CHECK(5, 5, 0)
+static void setAutoTransform(QImageReader& reader) { reader.setAutoTransform(true); }
+static QImage applyExifTransform(const QImage& image, const QString&) { return image; }
+#else
+#include "exif.h"
+static void setAutoTransform(QImageReader&) {}
+#endif
 
 #define OK(call) if(!(call)) throw ConvertFailedException()
 
@@ -222,7 +236,7 @@ void PrinterWorker::justUpload(QString filename, Bytestream header)
 void PrinterWorker::printImageAsImage(QString filename, Bytestream header, QString targetFormat)
 {
     QString imageFormat = "";
-    QStringList supportedImageFormats = {Mimer::JPEG, Mimer::PNG};
+    QStringList supportedImageFormats = QStringList() << Mimer::JPEG << Mimer::PNG;
 
 
     if(targetFormat == Mimer::RBMP)
@@ -255,8 +269,8 @@ void PrinterWorker::printImageAsImage(QString filename, Bytestream header, QStri
     else if(targetFormat == Mimer::RBMP)
     {
         QImageReader reader(filename);
-        reader.setAutoTransform(true);
-        QImage inImage = reader.read();
+        setAutoTransform(reader);
+        QImage inImage = applyExifTransform(reader.read(), filename);
         QBuffer buf;
 
         if(inImage.isNull())
@@ -286,8 +300,8 @@ void PrinterWorker::printImageAsImage(QString filename, Bytestream header, QStri
     else
     {
         QImageReader reader(filename);
-        reader.setAutoTransform(true);
-        QImage inImage = reader.read();
+        setAutoTransform(reader);
+        QImage inImage = applyExifTransform(reader.read(), filename);
         QBuffer buf;
 
         if(inImage.isNull())
@@ -426,10 +440,15 @@ void PrinterWorker::convertImage(QString filename, Bytestream header, PrintParam
             targetSize.transpose();
         }
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
         QSize initialSize = defaultSize.scaled(targetSize, Qt::KeepAspectRatio);
+#else
+        QSize initialSize = defaultSize;
+        initialSize.scale(targetSize, Qt::KeepAspectRatio);
+#endif
 
         inImage = QImage(initialSize, QImage::Format_RGB32);
-        inImage.fill(QColor("white"));
+        inImage.fill(QColor("white").rgb());
         QPainter painter(&inImage);
 
         renderer.render(&painter);
@@ -444,8 +463,8 @@ void PrinterWorker::convertImage(QString filename, Bytestream header, PrintParam
     else
     {
         QImageReader reader(filename);
-        reader.setAutoTransform(true);
-        inImage = reader.read();
+        setAutoTransform(reader);
+        inImage = applyExifTransform(reader.read(), filename);
 
         if(inImage.isNull())
         {
@@ -570,8 +589,9 @@ void PrinterWorker::convertOfficeDocument(QString filename, Bytestream header, P
     }
 
     QProcess CalligraConverter(this);
-    CalligraConverter.setProgram("calligraconverter");
-    QStringList CalligraConverterArgs = {"--batch", "--mimetype", Mimer::PDF, "--print-orientation", "Portrait", "--print-papersize", ShortPaperSize};
+    QStringList CalligraConverterArgs = QStringList() << "--batch" << "--mimetype" << Mimer::PDF
+                                                     << "--print-orientation" << "Portrait"
+                                                     << "--print-papersize" << ShortPaperSize;
 
     CalligraConverterArgs << filename;
 
@@ -580,9 +600,7 @@ void PrinterWorker::convertOfficeDocument(QString filename, Bytestream header, P
     CalligraConverterArgs << tmpPdfFile.fileName();
 
     qDebug() << "CalligraConverteArgs is" << CalligraConverterArgs;
-    CalligraConverter.setArguments(CalligraConverterArgs);
-
-    CalligraConverter.start();
+    CalligraConverter.start("calligraconverter", CalligraConverterArgs);
 
     qDebug() << "CalligraConverter Starting";
 

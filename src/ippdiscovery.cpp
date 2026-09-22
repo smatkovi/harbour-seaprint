@@ -10,6 +10,13 @@
 
 #define ALL 255 //for querying
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+static bool caseInsensitiveLessThan(const QString& a, const QString& b)
+{
+    return a.compare(b, Qt::CaseInsensitive) < 0;
+}
+#endif
+
 QStringList get_addr(Bytestream& bts)
 {
     QStringList addr;
@@ -40,8 +47,9 @@ QStringList get_addr(Bytestream& bts)
 IppDiscovery::IppDiscovery() : QStringListModel()
 {
     socket = new QUdpSocket(this);
-    connect(socket, &QUdpSocket::readyRead, this, &IppDiscovery::readPendingDatagrams);
-    connect(this, &IppDiscovery::favouritesChanged, this, &IppDiscovery::cleanUpdate);
+    // Qt 4.7 has no pointer-to-member connect.
+    connect(socket, SIGNAL(readyRead()), this, SLOT(readPendingDatagrams()));
+    connect(this, SIGNAL(favouritesChanged()), this, SLOT(cleanUpdate()));
     _transactionid = 0;
 }
 
@@ -68,7 +76,8 @@ IppDiscovery* IppDiscovery::instance()
 }
 
 void IppDiscovery::discover() {
-    sendQuery(PTR, {"_ipp._tcp.local", "_ipps._tcp.local"});
+    // Not a braced list: Qt 4.7's QList has no initializer-list constructor.
+    sendQuery(PTR, QStringList() << "_ipp._tcp.local" << "_ipps._tcp.local");
 }
 
 void IppDiscovery::reset() {
@@ -235,7 +244,12 @@ void IppDiscovery::update()
         }
     }
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     found.sort(Qt::CaseInsensitive);
+#else
+    // QStringList::sort() takes no case sensitivity before Qt 5.
+    qSort(found.begin(), found.end(), caseInsensitiveLessThan);
+#endif
 
     // Counting on that _ipp duplicates doesn't resolve fully any erlier than their _ipps counterpart
 
@@ -268,12 +282,12 @@ void IppDiscovery::updateAndQueryPtrs(QStringList& ptrs, QStringList new_ptrs)
         {
             // Avahi *really* hates sending TXT to anything else than a TXT query
             qDebug() << "querying txt " << ptr;
-            sendQuery(TXT, {ptr});
+            sendQuery(TXT, QStringList(ptr));
         }
         if(!_targets.contains(ptr) || !_ports.contains(ptr))
         {
             qDebug() << "querying srv " << ptr;
-            sendQuery(SRV, {ptr});
+            sendQuery(SRV, QStringList(ptr));
         }
     }
 }
@@ -305,7 +319,7 @@ void IppDiscovery::readPendingDatagrams()
             for(quint16 i = 0; i < questions; i++)
             {
                 quint16 qtype, qflags;
-                qaddr = get_addr(resp).join('.');
+                qaddr = get_addr(resp).join(".");
                 resp >> qtype >> qflags;
             }
 
@@ -314,7 +328,7 @@ void IppDiscovery::readPendingDatagrams()
                 quint16 atype, aflags, len;
                 quint32 ttl;
 
-                aaddr = get_addr(resp).join('.');
+                aaddr = get_addr(resp).join(".");
                 resp >> atype >> aflags >> ttl >> len;
 
                 quint16 pos_before = resp.pos();

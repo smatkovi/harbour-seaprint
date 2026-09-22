@@ -17,22 +17,24 @@ IppPrinter::IppPrinter()
 {
     _worker = new PrinterWorker(this);
 
-    QObject::connect(this, &IppPrinter::urlChanged, this, &IppPrinter::onUrlChanged);
+    QObject::connect(this, SIGNAL(urlChanged()), this, SLOT(onUrlChanged()));
     qRegisterMetaType<QTemporaryFile*>("QTemporaryFile*");
 
-    connect(this, &IppPrinter::doDoGetPrinterAttributes, _worker, &PrinterWorker::getPrinterAttributes);
-    connect(this, &IppPrinter::doGetJobs, _worker, &PrinterWorker::getJobs);
-    connect(this, &IppPrinter::doCancelJob, _worker, &PrinterWorker::cancelJob);
-    connect(this, &IppPrinter::doIdentify, _worker, &PrinterWorker::identify);
-    connect(this, &IppPrinter::doPrint, _worker, &PrinterWorker::print);
-    connect(this, &IppPrinter::doPrint2, _worker, &PrinterWorker::print2);
+    connect(this, SIGNAL(doDoGetPrinterAttributes(Bytestream)), _worker, SLOT(getPrinterAttributes(Bytestream)));
+    connect(this, SIGNAL(doGetJobs(Bytestream)), _worker, SLOT(getJobs(Bytestream)));
+    connect(this, SIGNAL(doCancelJob(Bytestream)), _worker, SLOT(cancelJob(Bytestream)));
+    connect(this, SIGNAL(doIdentify(Bytestream)), _worker, SLOT(identify(Bytestream)));
+    connect(this, SIGNAL(doPrint(QString,QString,QString,IppMsg,PrintParameters,QMargins)),
+            _worker, SLOT(print(QString,QString,QString,IppMsg,PrintParameters,QMargins)));
+    connect(this, SIGNAL(doPrint2(QString,QString,QString,IppMsg,IppMsg,PrintParameters,QMargins)),
+            _worker, SLOT(print2(QString,QString,QString,IppMsg,IppMsg,PrintParameters,QMargins)));
 
-    connect(this, &IppPrinter::doGetStrings, _worker, &PrinterWorker::getStrings);
-    connect(this, &IppPrinter::doGetImage, _worker, &PrinterWorker::getImage);
+    connect(this, SIGNAL(doGetStrings(QUrl)), _worker, SLOT(getStrings(QUrl)));
+    connect(this, SIGNAL(doGetImage(QUrl)), _worker, SLOT(getImage(QUrl)));
 
-    connect(_worker, &PrinterWorker::progress, this, &IppPrinter::setProgress);
-    connect(_worker, &PrinterWorker::busyMessage, this, &IppPrinter::setBusyMessage);
-    connect(_worker, &PrinterWorker::failed, this, &IppPrinter::convertFailed);
+    connect(_worker, SIGNAL(progress(qint64,qint64)), this, SLOT(setProgress(qint64,qint64)));
+    connect(_worker, SIGNAL(busyMessage(QString)), this, SLOT(setBusyMessage(QString)));
+    connect(_worker, SIGNAL(failed(QString)), this, SLOT(convertFailed(QString)));
 
     qRegisterMetaType<QMargins>();
     qRegisterMetaType<IppMsg>();
@@ -349,7 +351,7 @@ void IppPrinter::getImageFinished(CURLcode res, Bytestream data)
         if(tmp.loadFromData(data.raw(), data.size(), "PNG"))
         {
             _icon = tmp;
-            qDebug() << "image loaded" << _icon;
+            qDebug() << "image loaded" << _icon.size();
             emit iconChanged();
 
             if(tmp.size().width() < 128)
@@ -384,14 +386,15 @@ QString targetFormatIfAuto(QString documentFormat, QString mimeType, QJsonArray 
 {
     if(documentFormat == Mimer::OctetStream)
     {
-        QStringList PdfPrioList = {Mimer::PDF, Mimer::Postscript, Mimer::PWG, Mimer::URF};
+        QStringList PdfPrioList = QStringList() << Mimer::PDF << Mimer::Postscript
+                                                << Mimer::PWG << Mimer::URF;
         if(mimeType == Mimer::PDF)
         {
             return firstMatch(supportedMimeTypes, PdfPrioList);
         }
         else if(mimeType == Mimer::Postscript)
         {
-            return firstMatch(supportedMimeTypes, {Mimer::Postscript});
+            return firstMatch(supportedMimeTypes, QStringList(Mimer::Postscript));
         }
         else if(mimeType == Mimer::Plaintext)
         {
@@ -403,12 +406,14 @@ QString targetFormatIfAuto(QString documentFormat, QString mimeType, QJsonArray 
         }
         else if(documentFormat == Mimer::SVG)
         {
-            QStringList SvgPrioList {Mimer::PWG, Mimer::URF, Mimer::PDF, Mimer::Postscript};
+            QStringList SvgPrioList = QStringList() << Mimer::PWG << Mimer::URF
+                                                    << Mimer::PDF << Mimer::Postscript;
             return firstMatch(supportedMimeTypes, SvgPrioList);
         }
         else if(Mimer::isImage(mimeType))
         {
-            QStringList ImageFormatPrioList {Mimer::PNG, Mimer::PWG, Mimer::URF, Mimer::PDF, Mimer::Postscript, Mimer::JPEG};
+            QStringList ImageFormatPrioList = QStringList() << Mimer::PNG << Mimer::PWG << Mimer::URF
+                                                            << Mimer::PDF << Mimer::Postscript << Mimer::JPEG;
             if(mimeType == Mimer::JPEG)
             {
                 // Prioritize transferring JPEG as JPEG, as it will not be transcoded
@@ -559,8 +564,10 @@ void IppPrinter::adjustRasterSettings(QString filename, QString mimeType, QJsonO
     }
 }
 
-void IppPrinter::print(QJsonObject jobAttrs, QString filename)
+void IppPrinter::print(QVariantMap jobAttrsMap, QString filename)
 {
+    QJsonObject jobAttrs = QJsonObject::fromVariantMap(jobAttrsMap);
+
     qDebug() << "printing" << filename << jobAttrs;
 
     _progress = "";
@@ -594,7 +601,8 @@ void IppPrinter::print(QJsonObject jobAttrs, QString filename)
     }
 
     QString targetFormat = getAttrOrDefault(jobAttrs, "document-format").toString();
-    QStringList goodFormats = {Mimer::PDF, Mimer::Postscript, Mimer::PWG, Mimer::URF};
+    QStringList goodFormats = QStringList() << Mimer::PDF << Mimer::Postscript
+                                            << Mimer::PWG << Mimer::URF;
     bool imageToImage = Mimer::isImage(mimeType) && Mimer::isImage(targetFormat);
     if(!jobAttrs.contains("document-format") && !(goodFormats.contains(targetFormat) || imageToImage))
     { // User made no choice, and we don't know the target format - treat as if auto

@@ -1,0 +1,11 @@
+harbour-seaprint (1.3.4-meego1) unstable; urgency=low
+
+  * First MeeGo Harmattan edition, from upstream 1.3.4.
+  * Qt 4.7 / QtQuick 1.1 user interface with com.nokia.meego components;
+    the Silica types it has none of are stand-ins in meego/qml/silica.
+  * Own file picker: the N9 indexes pictures and music, not documents.
+  * The WLAN name comes from the kernel rather than from connman.
+  * poppler, cairo and libjpeg are the device's own, loaded at run time.
+  * No office formats: Harmattan has no calligraconverter.
+
+ -- Sebastian Matkovich <sebastian.matkovich@gmail.com>  Mon, 22 Sep 2026 12:00:00 +0000

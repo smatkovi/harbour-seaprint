@@ -1,0 +1,46 @@
+// The slice of Qt 5's QPageSize that the PDF paths use: a size in points, and
+// that size converted to device pixels at a given resolution.
+#pragma once
+#include <QRect>
+#include <QSizeF>
+#include <QSize>
+
+class QPageSize
+{
+public:
+    enum Unit { Point, Millimeter, Inch };
+
+    QPageSize() : m_points(0, 0) {}
+    QPageSize(const QSizeF& size, Unit units) : m_points(toPoints(size, units)) {}
+
+    QSizeF sizePoints() const { return m_points; }
+    QSizeF size(Unit units) const
+    {
+        switch(units)
+        {
+        case Millimeter: return QSizeF(m_points.width()*25.4/72.0, m_points.height()*25.4/72.0);
+        case Inch: return QSizeF(m_points.width()/72.0, m_points.height()/72.0);
+        default: return m_points;
+        }
+    }
+    QSize sizePixels(int resolution) const
+    {
+        return QSize(qRound(m_points.width()*resolution/72.0),
+                     qRound(m_points.height()*resolution/72.0));
+    }
+    QRect rectPixels(int resolution) const { return QRect(QPoint(0, 0), sizePixels(resolution)); }
+    bool isValid() const { return m_points.isValid(); }
+
+private:
+    static QSizeF toPoints(const QSizeF& size, Unit units)
+    {
+        switch(units)
+        {
+        case Millimeter: return QSizeF(size.width()*72.0/25.4, size.height()*72.0/25.4);
+        case Inch: return QSizeF(size.width()*72.0, size.height()*72.0);
+        default: return size;
+        }
+    }
+
+    QSizeF m_points;
+};

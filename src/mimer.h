@@ -13,32 +13,52 @@ public:
     static Mimer* instance();
     Q_INVOKABLE QString get_type(QString filename);
 
-    Q_PROPERTY(const QString OctetStream MEMBER OctetStream CONSTANT);
+    Q_PROPERTY(QString OctetStream READ getOctetStream CONSTANT)
+    QString getOctetStream() const {return OctetStream;}
 
-    Q_PROPERTY(const QString PDF MEMBER PDF CONSTANT);
-    Q_PROPERTY(const QString Postscript MEMBER Postscript CONSTANT);
-    Q_PROPERTY(const QString PWG MEMBER PWG CONSTANT);
-    Q_PROPERTY(const QString URF MEMBER URF CONSTANT);
+    Q_PROPERTY(QString PDF READ getPDF CONSTANT)
+    QString getPDF() const {return PDF;}
+    Q_PROPERTY(QString Postscript READ getPostscript CONSTANT)
+    QString getPostscript() const {return Postscript;}
+    Q_PROPERTY(QString PWG READ getPWG CONSTANT)
+    QString getPWG() const {return PWG;}
+    Q_PROPERTY(QString URF READ getURF CONSTANT)
+    QString getURF() const {return URF;}
 
-    Q_PROPERTY(const QString PNG MEMBER PNG CONSTANT);
-    Q_PROPERTY(const QString GIF MEMBER GIF CONSTANT);
-    Q_PROPERTY(const QString JPEG MEMBER JPEG CONSTANT);
-    Q_PROPERTY(const QString TIFF MEMBER TIFF CONSTANT);
-    Q_PROPERTY(const QString SVG MEMBER SVG CONSTANT);
-    Q_PROPERTY(const QString RBMP MEMBER RBMP CONSTANT);
+    Q_PROPERTY(QString PNG READ getPNG CONSTANT)
+    QString getPNG() const {return PNG;}
+    Q_PROPERTY(QString GIF READ getGIF CONSTANT)
+    QString getGIF() const {return GIF;}
+    Q_PROPERTY(QString JPEG READ getJPEG CONSTANT)
+    QString getJPEG() const {return JPEG;}
+    Q_PROPERTY(QString TIFF READ getTIFF CONSTANT)
+    QString getTIFF() const {return TIFF;}
+    Q_PROPERTY(QString SVG READ getSVG CONSTANT)
+    QString getSVG() const {return SVG;}
+    Q_PROPERTY(QString RBMP READ getRBMP CONSTANT)
+    QString getRBMP() const {return RBMP;}
 
-    Q_PROPERTY(const QString DOC MEMBER DOC CONSTANT);
-    Q_PROPERTY(const QString DOCX MEMBER DOCX CONSTANT);
-    Q_PROPERTY(const QString RTF MEMBER RTF CONSTANT);
-    Q_PROPERTY(const QString ODT MEMBER ODT CONSTANT);
-    Q_PROPERTY(const QString PPT MEMBER PPT CONSTANT);
-    Q_PROPERTY(const QString PPTX MEMBER PPTX CONSTANT);
-    Q_PROPERTY(const QString ODP MEMBER ODP CONSTANT);
+    Q_PROPERTY(QString DOC READ getDOC CONSTANT)
+    QString getDOC() const {return DOC;}
+    Q_PROPERTY(QString DOCX READ getDOCX CONSTANT)
+    QString getDOCX() const {return DOCX;}
+    Q_PROPERTY(QString RTF READ getRTF CONSTANT)
+    QString getRTF() const {return RTF;}
+    Q_PROPERTY(QString ODT READ getODT CONSTANT)
+    QString getODT() const {return ODT;}
+    Q_PROPERTY(QString PPT READ getPPT CONSTANT)
+    QString getPPT() const {return PPT;}
+    Q_PROPERTY(QString PPTX READ getPPTX CONSTANT)
+    QString getPPTX() const {return PPTX;}
+    Q_PROPERTY(QString ODP READ getODP CONSTANT)
+    QString getODP() const {return ODP;}
 
 
-    Q_PROPERTY(const QString Plaintext MEMBER Plaintext CONSTANT);
+    Q_PROPERTY(QString Plaintext READ getPlaintext CONSTANT)
+    QString getPlaintext() const {return Plaintext;}
 
-    Q_PROPERTY(const QStringList OfficeFormats MEMBER OfficeFormats CONSTANT);
+    Q_PROPERTY(QStringList OfficeFormats READ getOfficeFormats CONSTANT)
+    QStringList getOfficeFormats() const {return OfficeFormats;}
 
     static const QString OctetStream;
 

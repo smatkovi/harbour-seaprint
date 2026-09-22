@@ -1,0 +1,27 @@
+// Qt 4.7 has no QMimeDatabase.
+//
+// SeaPrint only ever asks what a file the user picked is, and only cares about
+// the handful of types it can print, so this answers from the suffix and falls
+// back to sniffing the first bytes -- which is also what saves files that
+// arrive from the N9's gallery without a usable name.
+#pragma once
+#include <QString>
+
+class QMimeType
+{
+public:
+    QMimeType() {}
+    explicit QMimeType(const QString& name) : m_name(name) {}
+    QString name() const { return m_name; }
+    bool isValid() const { return !m_name.isEmpty(); }
+private:
+    QString m_name;
+};
+
+class QMimeDatabase
+{
+public:
+    enum MatchMode { MatchDefault, MatchExtension, MatchContent };
+    QMimeType mimeTypeForFile(const QString& fileName, MatchMode mode = MatchDefault) const;
+    QMimeType mimeTypeForName(const QString& name) const { return QMimeType(name); }
+};

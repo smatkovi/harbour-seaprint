@@ -1,0 +1,14 @@
+// Qt 4.7 has no logging categories. SeaPrint uses one call, to turn qDebug()
+// off unless the debug-log setting is on; qt4logging.cpp installs a message
+// handler that does the same thing.
+#pragma once
+#include <QtGlobal>
+
+class QLoggingCategory
+{
+public:
+    static QLoggingCategory* defaultCategory();
+    void setEnabled(QtMsgType type, bool enabled);
+    bool isDebugEnabled() const { return isEnabled(QtDebugMsg); }
+    static bool isEnabled(QtMsgType type);
+};

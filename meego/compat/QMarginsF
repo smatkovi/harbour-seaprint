@@ -1,0 +1,17 @@
+// Qt 4.7 has QMargins (int) but no QMarginsF.
+#pragma once
+#include <QMargins>
+
+class QMarginsF
+{
+public:
+    QMarginsF() : m_l(0), m_t(0), m_r(0), m_b(0) {}
+    QMarginsF(qreal l, qreal t, qreal r, qreal b) : m_l(l), m_t(t), m_r(r), m_b(b) {}
+    QMarginsF(const QMargins& m) : m_l(m.left()), m_t(m.top()), m_r(m.right()), m_b(m.bottom()) {}
+    qreal left() const { return m_l; }
+    qreal top() const { return m_t; }
+    qreal right() const { return m_r; }
+    qreal bottom() const { return m_b; }
+private:
+    qreal m_l, m_t, m_r, m_b;
+};

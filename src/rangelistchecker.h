@@ -14,7 +14,9 @@ class RangeListChecker : public QObject
 public:
     static RangeListChecker* instance();
 
-    Q_INVOKABLE QJsonArray parse(QString str) const;
+    // A QVariantList rather than a QJsonArray: QtDeclarative turns that into
+    // a JavaScript array for the dialog, and Qt 5 does the same.
+    Q_INVOKABLE QVariantList parse(QString str) const;
 
 private:
     static RangeListChecker* m_Instance;

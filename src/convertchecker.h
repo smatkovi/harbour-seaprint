@@ -9,7 +9,9 @@ class ConvertChecker : public QObject
     Q_OBJECT
 public:
     static ConvertChecker* instance();
-    Q_PROPERTY(bool calligra MEMBER _calligra CONSTANT)
+    Q_PROPERTY(bool calligra READ calligra CONSTANT)
+
+    bool calligra() const {return _calligra;}
 
     Q_INVOKABLE int pdfPages(QString pdf);
 

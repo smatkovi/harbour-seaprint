@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=SeaPrint
+Comment=Network printing
+Exec=/opt/harbour-seaprint/bin/harbour-seaprint %U
+Icon=/usr/share/icons/hicolor/80x80/apps/harbour-seaprint.png
+Terminal=false
+Categories=Utility;
+MimeType=application/pdf;application/postscript;text/plain;image/jpeg;image/png;image/gif;image/tiff;image/bmp;image/svg+xml;
+X-Osso-Type=application/x-executable
+X-Osso-Service=net.attah.seaprint
+X-MeeGo-Logical-Id=SeaPrint

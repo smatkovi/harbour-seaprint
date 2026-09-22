@@ -1,0 +1,24 @@
+// Qt 4 base for an item that paints itself with QPainter.
+//
+// QDeclarativeItem paints nothing unless ItemHasNoContents is cleared, and its
+// paint() carries the two QGraphicsItem arguments the Qt 5 signature dropped;
+// this forwards to the one-argument paint() the subclasses implement.
+#pragma once
+#include <QDeclarativeItem>
+#include <QPainter>
+
+class QQuickPaintedItem : public QDeclarativeItem
+{
+public:
+    QQuickPaintedItem(QDeclarativeItem* parent = 0) : QDeclarativeItem(parent)
+    {
+        setFlag(QGraphicsItem::ItemHasNoContents, false);
+    }
+
+    virtual void paint(QPainter* painter) = 0;
+
+    void paint(QPainter* painter, const QStyleOptionGraphicsItem*, QWidget*)
+    {
+        paint(painter);
+    }
+};

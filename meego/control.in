@@ -1,0 +1,18 @@
+Package: harbour-seaprint
+Version: @VERSION@
+Section: user/office
+Priority: optional
+Architecture: armel
+Depends: libqt4-declarative, libqt4-network, libqt4-gui, libqt4-dbus, libqt4-svg, qt-components, libcurl3, libglib2.0-0, libpoppler-glib4, libcairo2, libjpeg62
+Maintainer: Sebastian Matkovich <sebastian.matkovich@gmail.com>
+Homepage: https://github.com/attah/harbour-seaprint
+Description: Print over the network, without a computer
+ SeaPrint sends a document straight to a printer on the same Wi-Fi, over IPP:
+ no driver, no PC, no cloud. It finds printers by itself, asks each one what
+ it can do, and converts the file to a format that printer takes -- PDF,
+ PostScript, PWG raster, URF, JPEG or PNG.
+ .
+ MeeGo Harmattan edition of the Sailfish OS app by attah.
+Maemo-Display-Name: SeaPrint
+XB-Maemo-Icon-26:
+@ICON@

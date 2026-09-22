@@ -13,15 +13,19 @@ class IppPrinter : public QObject
 
     friend class PrinterWorker;
 
+    // Read through getters rather than MEMBER, which moc 4.7 does not know,
+    // and as QVariantMap/QVariantList rather than as the JSON classes:
+    // QtDeclarative turns those into plain JavaScript objects for the QML,
+    // and Qt 5 does the same, so both builds see the same thing.
     Q_PROPERTY(QString url READ getUrl WRITE setUrl NOTIFY urlChanged)
-    Q_PROPERTY(QJsonObject attrs MEMBER _attrs NOTIFY attrsChanged)
-    Q_PROPERTY(QJsonObject jobAttrs MEMBER _jobAttrs NOTIFY jobAttrsChanged)
-    Q_PROPERTY(QJsonArray jobs MEMBER _jobs NOTIFY jobsChanged)
-    Q_PROPERTY(QJsonObject strings MEMBER _strings NOTIFY stringsChanged)
-    Q_PROPERTY(QImage icon MEMBER _icon NOTIFY iconChanged)
-    Q_PROPERTY(QStringList additionalDocumentFormats MEMBER _additionalDocumentFormats NOTIFY additionalDocumentFormatsChanged)
-    Q_PROPERTY(QString busyMessage MEMBER _busyMessage NOTIFY busyMessageChanged)
-    Q_PROPERTY(QString progress MEMBER _progress NOTIFY progressChanged)
+    Q_PROPERTY(QVariantMap attrs READ attrs NOTIFY attrsChanged)
+    Q_PROPERTY(QVariantMap jobAttrs READ jobAttrs NOTIFY jobAttrsChanged)
+    Q_PROPERTY(QVariantList jobs READ jobs NOTIFY jobsChanged)
+    Q_PROPERTY(QVariantMap strings READ strings NOTIFY stringsChanged)
+    Q_PROPERTY(QImage icon READ icon NOTIFY iconChanged)
+    Q_PROPERTY(QStringList additionalDocumentFormats READ additionalDocumentFormats NOTIFY additionalDocumentFormatsChanged)
+    Q_PROPERTY(QString busyMessage READ busyMessage NOTIFY busyMessageChanged)
+    Q_PROPERTY(QString progress READ progress NOTIFY progressChanged)
 
     Q_PROPERTY(bool correctSuffix READ correctSuffix NOTIFY attrsChanged)
     Q_PROPERTY(QStringList suffixes READ suffixes NOTIFY attrsChanged)
@@ -33,6 +37,15 @@ public:
 
     QString getUrl() {return _url.toString();}
     void setUrl(QString url);
+
+    QVariantMap attrs() const {return _attrs.toVariantMap();}
+    QVariantMap jobAttrs() const {return _jobAttrs.toVariantMap();}
+    QVariantList jobs() const {return _jobs.toVariantList();}
+    QVariantMap strings() const {return _strings.toVariantMap();}
+    QImage icon() const {return _icon;}
+    QStringList additionalDocumentFormats() const {return _additionalDocumentFormats;}
+    QString busyMessage() const {return _busyMessage;}
+    QString progress() const {return _progress;}
 
     Q_INVOKABLE void refresh();
 
@@ -83,7 +96,10 @@ signals:
     void progressChanged();
 
 public slots:
-    void print(QJsonObject attrs, QString file);
+    // QML hands the job settings over as a JavaScript object. Qt 5 would turn
+    // that into a QJsonObject on its own; QtDeclarative makes a QVariantMap of
+    // it, which is the one spelling both engines convert to.
+    void print(QVariantMap attrs, QString file);
 
     void onUrlChanged();
     void MaybeGetStrings();

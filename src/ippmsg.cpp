@@ -109,7 +109,13 @@ QJsonValue IppMsg::consume_value(quint8 tag, Bytestream& data)
                 QDate date(year, month, day);
                 QTime time(hour, minutes, seconds, deci_seconds*100);
                 int offset_seconds = (plus_minus == '+' ? 1 : -1)*(utc_h_offset*60*60+utc_m_offset*60);
+#if QT_VERSION >= QT_VERSION_CHECK(5, 2, 0)
                 tmp_datetime = QDateTime(date, time, Qt::OffsetFromUTC, offset_seconds);
+#else
+                // Qt 4 spells the same thing in two steps.
+                tmp_datetime = QDateTime(date, time, Qt::UTC);
+                tmp_datetime.setUtcOffset(offset_seconds);
+#endif
             }
             value = tmp_datetime.toString(Qt::ISODate);
             break;
@@ -327,11 +333,11 @@ Bytestream IppMsg::encode()
     ipp << quint8(OpAttrs);
     // attributes-charset and attributes-natural-language are required to be first
     // some printers fail if the other mandatory parameters are not in this specific order
-    QStringList InitialAttrs = {"attributes-charset",
-                                "attributes-natural-language",
-                                "printer-uri",
-                                "job-id",
-                                "requesting-user-name"};
+    QStringList InitialAttrs = QStringList() << "attributes-charset"
+                                             << "attributes-natural-language"
+                                             << "printer-uri"
+                                             << "job-id"
+                                             << "requesting-user-name";
     for(QString key : InitialAttrs)
     {
         if(_opAttrs.find(key) != _opAttrs.end())

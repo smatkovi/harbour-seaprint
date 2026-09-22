@@ -28,7 +28,7 @@ RangeListChecker* RangeListChecker::instance()
     return m_Instance;
 }
 
-QJsonArray RangeListChecker::parse(QString str) const
+QVariantList RangeListChecker::parse(QString str) const
 {
     PrintParameters params;
     params.setPageRange(str.toStdString());
@@ -38,10 +38,10 @@ QJsonArray RangeListChecker::parse(QString str) const
     {
         if(p.first <= previous)
         {
-            return {};
+            return QVariantList();
         }
         ret.append(QJsonObject {{"low", int(p.first)}, {"high", int(p.second)}});
         previous = p.second;
     }
-    return ret;
+    return ret.toVariantList();
 }
