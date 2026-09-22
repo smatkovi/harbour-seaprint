@@ -1,12 +1,17 @@
 // How a QStringListModel reaches a QtQuick 1.1 delegate.
 //
 // The printer list is a QStringListModel (IppDiscovery), and the delegate has
-// to get the address out of it. Upstream says model.display; Qt 5 also offers
-// modelData. Run on the N950, this answers: model.display and display both
-// carry the address, modelData does not exist at all. So upstream's spelling
-// is right here too -- which is worth having written down, because the empty
-// printer list looked for a while as though it were not.
+// to get the address out of it. Two questions, both of which decided whether
+// the printer showed up on the N950 at all:
 //
+//   1. what the delegate calls the string -- model.display, display, or
+//      modelData (which Qt 5 also offers);
+//   2. whether the delegate notices when the string arrives *after* the row.
+//      IppDiscovery::update() inserts the row first and sets its text in the
+//      next call, and if QtQuick 1.1 does not follow that, every printer is
+//      built with an empty address.
+//
+// Needs a display, so it runs on the device:
 //   meego/build.sh guiprobe   ->  build/meego/guiprobe/model_probe
 //   DISPLAY=:0 ./model_probe
 #include <QApplication>
@@ -16,16 +21,35 @@
 #include <QDeclarativeItem>
 #include <QDeclarativeView>
 #include <QGraphicsScene>
-#include <QtDebug>
 #include <QStringListModel>
 #include <QTimer>
+#include <QtDebug>
+
+class Adder : public QObject
+{
+    Q_OBJECT
+
+public:
+    Adder(QStringListModel* model) : _model(model) {}
+
+public slots:
+    void addRow()
+    {
+        // The sequence IppDiscovery::update() uses.
+        _model->insertRow(_model->rowCount());
+        _model->setData(_model->index(_model->rowCount()-1, 0), "ipp://192.168.1.5/ipp/printer");
+        qDebug() << "row inserted, then set";
+    }
+
+private:
+    QStringListModel* _model;
+};
 
 int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
 
     QStringListModel model;
-    model.setStringList(QStringList() << "ipp://192.168.1.5/ipp/printer");
 
     QDeclarativeView view;
     view.rootContext()->setContextProperty("TheModel", &model);
@@ -36,14 +60,11 @@ int main(int argc, char* argv[])
         "    width: 100; height: 100\n"
         "    model: TheModel\n"
         "    delegate: Item {\n"
-        "        Component.onCompleted: {\n"
-        "            console.log('modelData:', typeof modelData !== 'undefined' ? modelData : '<undefined>')\n"
-        "            console.log('model.display:', typeof model !== 'undefined' && model.display !== undefined\n"
-        "                        ? model.display : '<undefined>')\n"
-        "            console.log('display:', typeof display !== 'undefined' ? display : '<undefined>')\n"
-        "            console.log('model.modelData:', typeof model !== 'undefined' && model.modelData !== undefined\n"
-        "                        ? model.modelData : '<undefined>')\n"
-        "        }\n"
+        "        property string seen: model.display\n"
+        "        Component.onCompleted: console.log('delegate created with:', \"'\" + seen + \"'\",\n"
+        "                                          '| display:', typeof display !== 'undefined' ? display : '<undefined>',\n"
+        "                                          '| modelData:', typeof modelData !== 'undefined' ? modelData : '<undefined>')\n"
+        "        onSeenChanged: console.log('delegate updated to:', \"'\" + seen + \"'\")\n"
         "    }\n"
         "}\n";
 
@@ -65,6 +86,11 @@ int main(int argc, char* argv[])
     }
     view.show();
 
-    QTimer::singleShot(2000, &app, SLOT(quit()));
+    Adder adder(&model);
+    QTimer::singleShot(1000, &adder, SLOT(addRow()));
+    QTimer::singleShot(3000, &app, SLOT(quit()));
+
     return app.exec();
 }
+
+#include "model_probe.moc"

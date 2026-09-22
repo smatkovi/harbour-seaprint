@@ -139,7 +139,8 @@ guiprobe)
  -Wl,--exclude-libs,ALL -Wl,--dynamic-linker=/lib/ld-linux.so.3"
     LIBS="-lQtDeclarative -lQtGui -lQtCore -lpthread"
     mkdir -p "$OUT"
-    $CXX $CXXFLAGS $LDFLAGS -o "$OUT/model_probe" "$HERE/meego/tests/model_probe.cpp" $LIBS
+    $MOC "$HERE/meego/tests/model_probe.cpp" -o "$OUT/model_probe.moc"
+    $CXX $CXXFLAGS -I"$OUT" $LDFLAGS -o "$OUT/model_probe" "$HERE/meego/tests/model_probe.cpp" $LIBS
     echo "== built $OUT/model_probe (run it on the device with DISPLAY=:0)"
     exit 0
     ;;
@@ -267,7 +268,8 @@ guiprobe)
  -Wl,--exclude-libs,ALL -Wl,--dynamic-linker=/lib/ld-linux.so.3"
     LIBS="-lQtDeclarative -lQtGui -lQtCore -lpthread"
     mkdir -p "$OUT"
-    $CXX $CXXFLAGS $LDFLAGS -o "$OUT/model_probe" "$HERE/meego/tests/model_probe.cpp" $LIBS
+    $MOC "$HERE/meego/tests/model_probe.cpp" -o "$OUT/model_probe.moc"
+    $CXX $CXXFLAGS -I"$OUT" $LDFLAGS -o "$OUT/model_probe" "$HERE/meego/tests/model_probe.cpp" $LIBS
     echo "== built $OUT/model_probe (run it on the device with DISPLAY=:0)"
     exit 0
     ;;
@@ -304,7 +306,8 @@ guiprobe)
  -Wl,--exclude-libs,ALL -Wl,--dynamic-linker=/lib/ld-linux.so.3"
     LIBS="-lQtDeclarative -lQtGui -lQtCore -lpthread"
     mkdir -p "$OUT"
-    $CXX $CXXFLAGS $LDFLAGS -o "$OUT/model_probe" "$HERE/meego/tests/model_probe.cpp" $LIBS
+    $MOC "$HERE/meego/tests/model_probe.cpp" -o "$OUT/model_probe.moc"
+    $CXX $CXXFLAGS -I"$OUT" $LDFLAGS -o "$OUT/model_probe" "$HERE/meego/tests/model_probe.cpp" $LIBS
     echo "== built $OUT/model_probe (run it on the device with DISPLAY=:0)"
     exit 0
     ;;
