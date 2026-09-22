@@ -225,7 +225,7 @@ Page {
 
                 Image {
                     id: warningIcon
-                    source: "image://theme/icon-lock-warning"
+                    source: "image://theme/icon-l-error"
                     anchors.bottom: icon.bottom
                     anchors.right: icon.right
                     visible: Utils.isWaringState(printer)
@@ -274,7 +274,7 @@ Page {
                             visible: supported_formats.pdf
                             highlightColor: "red"
                             highlighted: !(appWin.selectedFile == "" || canPrint)
-                            source: "image://theme/icon-m-file-pdf"
+                            source: "image://theme/icon-m-content-pdf-inverse"
                         }
                         HighlightImage {
                             height: AppTheme.itemSizeExtraSmall/2
@@ -282,7 +282,7 @@ Page {
                             visible: supported_formats.postscript
                             highlightColor: "red"
                             highlighted: !(appWin.selectedFile == "" || canPrint)
-                            source: "image://theme/icon-m-file-other"
+                            source: "image://theme/icon-m-content-file-unknown-inverse"
 
                         }
                         HighlightImage {
@@ -291,7 +291,7 @@ Page {
                             visible: supported_formats.plaintext
                             highlightColor: "red"
                             highlighted: !(appWin.selectedFile == "" || canPrint)
-                            source: "image://theme/icon-m-file-document"
+                            source: "image://theme/icon-m-content-document-inverse"
                         }
                         HighlightImage {
                             height: AppTheme.itemSizeExtraSmall/2
@@ -299,7 +299,7 @@ Page {
                             visible: supported_formats.office
                             highlightColor: "red"
                             highlighted: !(appWin.selectedFile == "" || canPrint)
-                            source: "image://theme/icon-m-file-formatted"
+                            source: "image://theme/icon-m-content-word-inverse"
                         }
                         HighlightImage {
                             height: AppTheme.itemSizeExtraSmall/2
@@ -307,7 +307,7 @@ Page {
                             visible: supported_formats.office
                             highlightColor: "red"
                             highlighted: !(appWin.selectedFile == "" || canPrint)
-                            source: "image://theme/icon-m-file-presentation"
+                            source: "image://theme/icon-m-content-open-document-presentation-inverse"
                         }
                         HighlightImage {
                             height: AppTheme.itemSizeExtraSmall/2
@@ -315,7 +315,7 @@ Page {
                             visible: supported_formats.images
                             highlightColor: "red"
                             highlighted: !(appWin.selectedFile == "" || canPrint)
-                            source: "image://theme/icon-m-file-image"
+                            source: "image://theme/icon-m-content-image-inverse"
                         }
                     }
 
@@ -372,7 +372,7 @@ Page {
                 visible: Mimer.isOffice(appWin.selectedFileType)
 
                 HighlightImage {
-                    source: "image://theme/icon-s-warning"
+                    source: "image://theme/icon-l-error"
                     highlighted: true
                     highlightColor: AppTheme.highlightColor
                 }
@@ -416,13 +416,13 @@ Page {
                 width: parent.width
                 IconButton {
                     id: folderButton
-                    source: "image://theme/icon-m-file-document"
+                    source: "image://theme/icon-m-content-document-inverse"
                     width: parent.width/2
                     onClicked: pageStack.push(documentPickerPage)
                 }
                 IconButton {
                     id: imageButton
-                    source: "image://theme/icon-m-file-image"
+                    source: "image://theme/icon-m-content-image-inverse"
                     width: parent.width/2
                     onClicked: pageStack.push(imagePickerPage)
                 }

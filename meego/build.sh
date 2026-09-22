@@ -56,6 +56,7 @@ APP_SRC="src/dbusadaptorbase.cpp \
  meego/main.cpp \
  meego/wifichecker.cpp \
  meego/tintedimage.cpp \
+ meego/themeicons.cpp \
  meego/filebrowser.cpp \
  meego/clipboard.cpp \
  meego/compat/qt4json.cpp \
@@ -124,6 +125,40 @@ x86)
     LDFLAGS="-L$SIMQT/lib -Wl,-rpath,$SIMQT/lib"
     LIBS="-lQtDeclarative -lQtDBus -lQtSvg -lQtGui -lQtNetwork -lQtCore -lcurl -lglib-2.0 -lgobject-2.0 -ldl -lpthread"
     ;;
+guiprobe)
+    # A small GUI test for the device: it needs X, which the N9 has and the
+    # build machine has not, so it is only cross-compiled here.
+    CXX=$XGCC/bin/arm-none-linux-gnueabi-g++
+    MOC=$SIMQT/bin/moc
+    QTINC=$SYSROOT/usr/include/qt4
+    # No DEFINES here: this one is compiled straight, not through a Makefile,
+    # and the version strings in them carry quotes the shell would eat.
+    CXXFLAGS="--sysroot=$SYSROOT -std=gnu++17 -O2 -Wno-register -I$QTINC"
+    for m in $QT4_MODULES; do CXXFLAGS="$CXXFLAGS -I$QTINC/$m"; done
+    LDFLAGS="--sysroot=$SYSROOT -static-libstdc++ -static-libgcc -Wl,-O1 \
+ -Wl,--exclude-libs,ALL -Wl,--dynamic-linker=/lib/ld-linux.so.3"
+    LIBS="-lQtDeclarative -lQtGui -lQtCore -lpthread"
+    mkdir -p "$OUT"
+    $CXX $CXXFLAGS $LDFLAGS -o "$OUT/model_probe" "$HERE/meego/tests/model_probe.cpp" $LIBS
+    echo "== built $OUT/model_probe (run it on the device with DISPLAY=:0)"
+    exit 0
+    ;;
+probe)
+    # The discovery probe is the app without its user interface: same objects,
+    # meego/tests/discovery_probe.cpp in place of main.cpp. It runs on the
+    # device, where mDNS can actually be tried.
+    CXX=$XGCC/bin/arm-none-linux-gnueabi-g++
+    [ -x "$CXX" ] || { echo "cross compiler missing: $CXX" >&2; exit 1; }
+    MOC=$SIMQT/bin/moc
+    QTINC=$SYSROOT/usr/include/qt4
+    GLIBINC="-I$SYSROOT/usr/include/glib-2.0 -I$SYSROOT/usr/lib/glib-2.0/include"
+    CXXFLAGS="--sysroot=$SYSROOT $COMMON_FLAGS $GLIBINC -I$QTINC"
+    for m in $QT4_MODULES; do CXXFLAGS="$CXXFLAGS -I$QTINC/$m"; done
+    LDFLAGS="--sysroot=$SYSROOT -static-libstdc++ -static-libgcc -Wl,-O1 -Wl,--as-needed \
+ -Wl,--exclude-libs,ALL -Wl,--dynamic-linker=/lib/ld-linux.so.3"
+    LIBS="-lQtDeclarative -lQtDBus -lQtSvg -lQtGui -lQtNetwork -lQtCore -lcurl -lglib-2.0 -lgobject-2.0 -ldl -lpthread"
+    APP_SRC=$(echo "$APP_SRC" | sed 's| meego/main.cpp | meego/tests/discovery_probe.cpp |')
+    ;;
 check)
     # The QML checker replaces meego/main.cpp and is built against the SDK's
     # plain desktop Qt (4.8.1): the Simulator's Qt 4.7.4 aborts without a
@@ -141,7 +176,7 @@ check)
     LIBS="-lQtDeclarative -lQtDBus -lQtSvg -lQtGui -lQtNetwork -lQtCore -lcurl -lglib-2.0 -lgobject-2.0 -ldl -lpthread"
     ;;
 *)
-    echo "usage: $0 arm|x86|tools|check" >&2; exit 2 ;;
+    echo "usage: $0 arm|x86|tools|check|probe" >&2; exit 2 ;;
 esac
 
 # --- Makefile --------------------------------------------------------------
@@ -159,7 +194,7 @@ MK=$OUT/Makefile
         objs=
         for s in $TOOLS_SRC; do
             o=$(basename "$s" .cpp).o; objs="$objs $o"
-            echo "$o: \$(SRC)/$s"; printf '\t$(CXX) $(CXXFLAGS) -c $< -o $@\n'
+            echo "$o: \$(SRC)/$s"; printf '\t$(CXX) $(CXXFLAGS) -I. -c $< -o $@\n'
         done
         echo "OBJS=$objs"
         echo "all: pdf2printable ippposter ipp_probe qml_semantics"
@@ -182,8 +217,13 @@ MK=$OUT/Makefile
         objs=
         for s in $APP_SRC; do
             o=$(echo "$s" | sed 's|/|_|g; s|\.cpp$|.o|'); objs="$objs $o"
-            echo "$o: \$(SRC)/$s"; printf '\t$(CXX) $(CXXFLAGS) -c $< -o $@\n'
+            echo "$o: \$(SRC)/$s"; printf '\t$(CXX) $(CXXFLAGS) -I. -c $< -o $@\n'
         done
+        if [ "$MODE" = probe ]; then
+            echo "discovery_probe.moc: \$(SRC)/meego/tests/discovery_probe.cpp"
+            printf '\t$(MOC) $< -o $@\n'
+            echo "meego_tests_discovery_probe.o: discovery_probe.moc"
+        fi
         for h in $MOC_HEADERS; do
             n=$(basename "$h" .h); objs="$objs moc_$n.o"
             echo "moc_$n.cpp: \$(SRC)/$h"; printf '\t$(MOC) $< -o $@\n'
@@ -213,7 +253,62 @@ arm|x86)
 tools)
     echo "== built $OUT/pdf2printable, $OUT/ippposter and $OUT/ipp_probe (run under qemu-arm -L \$SYSROOT)"
     ;;
+guiprobe)
+    # A small GUI test for the device: it needs X, which the N9 has and the
+    # build machine has not, so it is only cross-compiled here.
+    CXX=$XGCC/bin/arm-none-linux-gnueabi-g++
+    MOC=$SIMQT/bin/moc
+    QTINC=$SYSROOT/usr/include/qt4
+    # No DEFINES here: this one is compiled straight, not through a Makefile,
+    # and the version strings in them carry quotes the shell would eat.
+    CXXFLAGS="--sysroot=$SYSROOT -std=gnu++17 -O2 -Wno-register -I$QTINC"
+    for m in $QT4_MODULES; do CXXFLAGS="$CXXFLAGS -I$QTINC/$m"; done
+    LDFLAGS="--sysroot=$SYSROOT -static-libstdc++ -static-libgcc -Wl,-O1 \
+ -Wl,--exclude-libs,ALL -Wl,--dynamic-linker=/lib/ld-linux.so.3"
+    LIBS="-lQtDeclarative -lQtGui -lQtCore -lpthread"
+    mkdir -p "$OUT"
+    $CXX $CXXFLAGS $LDFLAGS -o "$OUT/model_probe" "$HERE/meego/tests/model_probe.cpp" $LIBS
+    echo "== built $OUT/model_probe (run it on the device with DISPLAY=:0)"
+    exit 0
+    ;;
+probe)
+    # The discovery probe is the app without its user interface: same objects,
+    # meego/tests/discovery_probe.cpp in place of main.cpp. It runs on the
+    # device, where mDNS can actually be tried.
+    CXX=$XGCC/bin/arm-none-linux-gnueabi-g++
+    [ -x "$CXX" ] || { echo "cross compiler missing: $CXX" >&2; exit 1; }
+    MOC=$SIMQT/bin/moc
+    QTINC=$SYSROOT/usr/include/qt4
+    GLIBINC="-I$SYSROOT/usr/include/glib-2.0 -I$SYSROOT/usr/lib/glib-2.0/include"
+    CXXFLAGS="--sysroot=$SYSROOT $COMMON_FLAGS $GLIBINC -I$QTINC"
+    for m in $QT4_MODULES; do CXXFLAGS="$CXXFLAGS -I$QTINC/$m"; done
+    LDFLAGS="--sysroot=$SYSROOT -static-libstdc++ -static-libgcc -Wl,-O1 -Wl,--as-needed \
+ -Wl,--exclude-libs,ALL -Wl,--dynamic-linker=/lib/ld-linux.so.3"
+    LIBS="-lQtDeclarative -lQtDBus -lQtSvg -lQtGui -lQtNetwork -lQtCore -lcurl -lglib-2.0 -lgobject-2.0 -ldl -lpthread"
+    APP_SRC=$(echo "$APP_SRC" | sed 's| meego/main.cpp | meego/tests/discovery_probe.cpp |')
+    ;;
 check)
     echo "== built $OUT/harbour-seaprint (the QML checker)"
+    ;;
+guiprobe)
+    # A small GUI test for the device: it needs X, which the N9 has and the
+    # build machine has not, so it is only cross-compiled here.
+    CXX=$XGCC/bin/arm-none-linux-gnueabi-g++
+    MOC=$SIMQT/bin/moc
+    QTINC=$SYSROOT/usr/include/qt4
+    # No DEFINES here: this one is compiled straight, not through a Makefile,
+    # and the version strings in them carry quotes the shell would eat.
+    CXXFLAGS="--sysroot=$SYSROOT -std=gnu++17 -O2 -Wno-register -I$QTINC"
+    for m in $QT4_MODULES; do CXXFLAGS="$CXXFLAGS -I$QTINC/$m"; done
+    LDFLAGS="--sysroot=$SYSROOT -static-libstdc++ -static-libgcc -Wl,-O1 \
+ -Wl,--exclude-libs,ALL -Wl,--dynamic-linker=/lib/ld-linux.so.3"
+    LIBS="-lQtDeclarative -lQtGui -lQtCore -lpthread"
+    mkdir -p "$OUT"
+    $CXX $CXXFLAGS $LDFLAGS -o "$OUT/model_probe" "$HERE/meego/tests/model_probe.cpp" $LIBS
+    echo "== built $OUT/model_probe (run it on the device with DISPLAY=:0)"
+    exit 0
+    ;;
+probe)
+    echo "== built $OUT/harbour-seaprint (the discovery probe, for the device)"
     ;;
 esac

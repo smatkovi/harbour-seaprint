@@ -42,7 +42,7 @@ BackgroundItem {
         anchors.right: parent.right
         anchors.rightMargin: AppTheme.paddingMedium
         anchors.verticalCenter: parent.verticalCenter
-        source: active ? "image://theme/icon-m-down" : "image://theme/icon-m-right"
+        source: active ? "image://theme/icon-m-common-expand" : "image://theme/icon-m-common-drilldown-arrow-inverse"
     }
 
 }

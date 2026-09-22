@@ -99,6 +99,30 @@ Silica property), `InfoBanner` (it is in `com.nokia.extras`, not in
 `com.nokia.meego`, so the notification is drawn here instead) and the slider's
 bounds.
 
+## What the device said
+
+Everything above was found before the app had ever run. The N950 then added
+its own list, and these are the ones no desktop check could have produced:
+
+- **An unbound QUdpSocket never hears the answer.** Qt 5 arms the read
+  notifier when a datagram goes out, Qt 4.7 only when the socket is bound --
+  so the mDNS queries went out, the printer answered, and discovery stayed
+  empty. `IppDiscovery` now binds before it asks.
+- **`this` in a QtQuick 1.1 handler is not the object.** Assigning it lands in
+  the XMLHttpRequest wrapper and reads as "Not an XMLHttpRequest object".
+- **Qt 4.7 cannot import one JavaScript file from another**, not even in a
+  `.pragma library` file, which is the only place `.import` is allowed at all.
+  utils.js therefore carries strings.js and the MIME constants inside it,
+  written in by `fix-qml.py` from `src/mimer.cpp` and `qml/pages/strings.js`.
+- **An image provider registered for "theme" replaces the platform's**, and
+  com.nokia.meego's own components then lose their graphics. The Silica icon
+  names are rewritten at port time instead, from the table in
+  `meego/themeicons.cpp`.
+- `model.display` is right for the printer list after all; `modelData` does not
+  exist in QtQuick 1.1 (`meego/tests/model_probe.cpp` asks the device).
+- Qt 4.7's Text has `paintedWidth`, not `contentWidth`.
+- /tmp on the device is a 4 MB tmpfs -- copy packages to the home directory.
+
 ## What is checked, and what is not
 
 Verified on the build machine: the QML (all 49 files load, against stand-ins
@@ -116,10 +140,11 @@ on the real Qt, and that `Object.keys`, `JSON`, `Array.isArray`, `filter`,
 `indexOf` and `openDatabaseSync` are all there. `Function.prototype.bind` is
 **not** -- nothing in the app uses it, but a future change must not.
 
-Not verified: the app running on a device. The N9 and N950 were unreachable
-while this was written. What that leaves open is the look of the pages
-against the real `com.nokia.meego` components and anything that needs a
-printer on the same network.
+On the N950 the app starts, draws its pages, and finds the printer on the
+network: `meego/tests/discovery_probe.cpp` runs the app's own discovery
+without a user interface and resolves an HP LaserJet over mDNS to
+`ipp://192.168.1.5/ipp/printer`. What has not been watched end to end yet is a
+print job leaving the phone, and the N9 itself has not run it at all.
 
 IPPS (TLS) will likely not work: the N9's curl is 7.21 against OpenSSL 0.9.8,
 so a modern printer's TLS will be refused. Plain IPP on port 631 is what to

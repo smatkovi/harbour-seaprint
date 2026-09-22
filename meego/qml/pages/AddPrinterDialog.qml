@@ -98,7 +98,7 @@ Dialog {
 
             Icon {
                 id: warningIcon
-                source: "image://theme/icon-m-warning"
+                source: "image://theme/icon-l-error"
                 anchors.verticalCenter: parent.verticalCenter
             }
 
@@ -121,7 +121,7 @@ Dialog {
 
             Icon {
                 id: warningIcon2
-                source: "image://theme/icon-m-warning"
+                source: "image://theme/icon-l-error"
                 anchors.verticalCenter: parent.verticalCenter
             }
 

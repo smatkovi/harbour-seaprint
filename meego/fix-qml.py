@@ -7,6 +7,7 @@ substitution lives in meego/qml/hand/ instead.
 """
 import os
 import re
+import shutil
 import sys
 
 # Modules that do not exist on Harmattan. The singletons among them
@@ -148,6 +149,9 @@ SUBST = [
     # version is a root context property from meego/main.cpp.
     (r'\bQt\.application\.version\b', 'appVersion'),
 
+    # (the theme icon names are rewritten in convert(), from the table in
+    #  meego/themeicons.cpp)
+
     # --- icons --------------------------------------------------------------
     # IconButton takes the source directly here; icon.source is a Silica
     # grouped property.
@@ -168,6 +172,23 @@ def silica_import(relative_depth):
     return 'import com.nokia.meego 1.0\nimport "%ssilica"' % prefix
 
 
+def theme_icons():
+    """The Silica icon names and what Harmattan calls them.
+
+    Read out of meego/themeicons.cpp, which the C++ side uses, so that a name
+    cannot be mapped one way in QML and another way in the image item. The
+    names are rewritten here rather than served by an image provider of our
+    own: a provider registered for "theme" replaces the platform's, and the
+    MeeGo components then lose their own graphics.
+    """
+    with open(os.path.join("meego", "themeicons.cpp")) as f:
+        table = re.findall(r'\{"([a-z0-9-]+)",\s*"([a-z0-9-]+)"\}', f.read())
+    if len(table) < 10:
+        raise SystemExit("meego/fix-qml.py: the icon table in meego/themeicons.cpp "
+                         "could not be read")
+    return table
+
+
 def convert(text, depth, name=""):
     for old, new in FILE_PATCHES.get(name, []):
         if old not in text:
@@ -185,8 +206,85 @@ def convert(text, depth, name=""):
     for pattern, replacement in SUBST:
         text = re.sub(pattern, replacement, text, flags=re.M)
 
+    for silica, blanco in theme_icons():
+        text = text.replace("image://theme/" + silica + '"', "image://theme/" + blanco + '"')
+
     text = TOLERANT_CONNECTIONS[0].sub(TOLERANT_CONNECTIONS[1], text)
     return text
+
+
+
+def fix_utils(text, src):
+    """utils.js, which upstream feeds the singletons through a QML import.
+
+    Qt 4.7 accepts `.import` only in a `.pragma library` file, and such a file
+    has no QML context -- so neither the modules (which this port does not
+    have; the singletons are context properties) nor a context property can be
+    reached from it. What it actually takes from Mimer is a handful of constant
+    strings and two one-line tests, so those are written into the file. They
+    are read out of src/mimer.cpp rather than typed here, so that they cannot
+    drift away from what the C++ answers.
+    """
+    mimer = os.path.join(os.path.dirname(src.rstrip("/")), "src", "mimer.cpp")
+    if not os.path.exists(mimer):
+        mimer = os.path.join("src", "mimer.cpp")
+    with open(mimer) as f:
+        cpp = f.read()
+
+    constants = re.findall(r'const QString Mimer::(\w+)\s*=\s*"([^"]*)"', cpp)
+    if len(constants) < 15:
+        raise SystemExit("meego/fix-qml.py: could not read the MIME types out of "
+                         "src/mimer.cpp; check what changed upstream")
+    names = dict(constants)
+
+    office = re.search(r'const QStringList Mimer::OfficeFormats = ([^;]+);', cpp)
+    if not office:
+        raise SystemExit("meego/fix-qml.py: OfficeFormats not found in src/mimer.cpp")
+    office_names = re.findall(r'\b([A-Z][A-Z_]+)\b', office.group(1))
+    raster = re.search(r'const QStringList Mimer::RasterFormats = ([^;]+);', cpp)
+    raster_names = re.findall(r'\b([A-Z][A-Z_]+)\b', raster.group(1)) if raster else ["PWG", "URF"]
+
+    lines = ['// Written by meego/fix-qml.py out of src/mimer.cpp: Qt 4.7 only allows',
+             '// .import in a .pragma library file, and such a file cannot see the',
+             '// singletons this used to import.',
+             'var Mimer = {']
+    for name, value in constants:
+        lines.append('    %s: "%s",' % (name, value))
+    lines.append('    OfficeFormats: [%s],' %
+                 ", ".join('"%s"' % names[n] for n in office_names if n in names))
+    lines.append('    RasterFormats: [%s],' %
+                 ", ".join('"%s"' % names[n] for n in raster_names if n in names))
+    lines.append('    isRaster: function(t) { return this.RasterFormats.indexOf(t) != -1 },')
+    lines.append('    isImage: function(t) { return t.indexOf("image/") == 0 && !this.isRaster(t) },')
+    lines.append('    isOffice: function(t) { return this.OfficeFormats.indexOf(t) != -1 }')
+    lines.append('}')
+    lines.append('')
+    lines.append('// Harmattan has no calligraconverter and no way to install one.')
+    lines.append('var ConvertChecker = { calligra: false }')
+    lines.append('')
+
+    text = re.sub(r'^\.import seaprint\.\w+ 1\.0 as \w+\s*$\n', '', text, flags=re.M)
+    text = text.replace("Mimer.Mimer.", "Mimer.")
+    text = text.replace("ConvertChecker.ConvertChecker.", "ConvertChecker.")
+
+    # Qt 4.7 cannot import one JavaScript file from another at all -- not even
+    # in a library, where it is the only kind of import that would be allowed.
+    # strings.js (the printer vocabulary) is therefore written into this file;
+    # nothing else imports it, and its three tables collide with nothing here.
+    strings_path = os.path.join(os.path.dirname(os.path.join(src, "pages", "x")), "strings.js")
+    with open(strings_path) as f:
+        strings = f.read()
+    strings = re.sub(r'^\.pragma library\s*$\n', '', strings, flags=re.M)
+    text = re.sub(r'^\.import "strings\.js" as Strings\s*$\n', '', text, flags=re.M)
+    text = text.replace("Strings.", "")
+
+    lines.append("// strings.js, written in here: see above.")
+    lines.append(strings)
+
+    # ".pragma library" has to be the first thing in the file; everything
+    # generated goes right after it, before the code that uses it.
+    text = re.sub(r'^\.pragma library\s*$\n', '', text, flags=re.M)
+    return ".pragma library\n\n" + "\n".join(lines) + "\n" + text
 
 
 def main():
@@ -208,11 +306,18 @@ def main():
         with open(out, "w") as f:
             f.write(convert(text, depth, name))
 
-    # The JavaScript is shared as it stands; QtScript in Qt 4.7 is ES5.
+    # The pictures the pages carry (the placeholder printer icon) go along.
+    for name in sorted(os.listdir(os.path.join(src, "pages"))):
+        if name.endswith((".svg", ".png")):
+            shutil.copy(os.path.join(src, "pages", name), os.path.join(dst, "pages", name))
+
+    # utils.js needs one change of its own; see fix_utils().
     for name in sorted(os.listdir(os.path.join(src, "pages"))):
         if name.endswith(".js"):
             with open(os.path.join(src, "pages", name)) as f:
                 text = f.read()
+            if name == "utils.js":
+                text = fix_utils(text, src)
             with open(os.path.join(dst, "pages", name), "w") as f:
                 f.write(text)
 

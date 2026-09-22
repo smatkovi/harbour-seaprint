@@ -97,6 +97,21 @@ int main(int argc, char* argv[])
         "        console.log('15 Function.prototype.bind:', typeof (function(){}).bind)\n"
         "        console.log('16 openDatabaseSync:', typeof openDatabaseSync)\n"
         "        console.log('17 round trip:', JSON.stringify({a: [1, {b: 2}]}))\n"
+        // The favourites live in a QML offline-storage database; on the device
+        // this answered 'Not an XMLHttpRequest object', which no desktop Qt
+        // reproduces.
+        "        try {\n"
+        "            var db = openDatabaseSync('ProbeDB', '1.0', 'probe', 100000)\n"
+        "            console.log('18 openDatabaseSync:', typeof db, db ? db.version : '-')\n"
+        "            db.transaction(function (tx) {\n"
+        "                tx.executeSql('CREATE TABLE IF NOT EXISTS T (a STRING)')\n"
+        "                tx.executeSql('INSERT INTO T VALUES(?)', ['x'])\n"
+        "                var res = tx.executeSql('SELECT * FROM T')\n"
+        "                console.log('19 rows:', res.rows.length)\n"
+        "            })\n"
+        "        } catch (e) {\n"
+        "            console.log('18 database failed:', e)\n"
+        "        }\n"
         "    }\n"
         "}\n";
 

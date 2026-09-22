@@ -58,7 +58,11 @@ PageStackWindow {
 
     initialPage: Component {
         FirstPage {
-            Component.onCompleted: appWin._mainPage = this
+            // Not `this`: in QtQuick 1.1 `this` inside a handler is not the
+            // object but the script's own global, and assigning it lands in
+            // the XMLHttpRequest wrapper with "Not an XMLHttpRequest object".
+            id: firstPage
+            Component.onCompleted: appWin._mainPage = firstPage
         }
     }
 

@@ -47,6 +47,19 @@ QStringList get_addr(Bytestream& bts)
 IppDiscovery::IppDiscovery() : QStringListModel()
 {
     socket = new QUdpSocket(this);
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+    // Bind before sending anything. Qt 5 arms the read notifier as soon as a
+    // datagram goes out, Qt 4.7 only when the socket is bound -- so on
+    // Harmattan the printers' answers arrived at the port and nothing ever
+    // read them, and discovery came up empty on a network where a plain
+    // socket sees the printer at once. Any address, any port: the query goes
+    // out from that port and the answers come back to it, which is how a
+    // one-shot mDNS query works (RFC 6762 section 5.1).
+    if(!socket->bind())
+    {
+        qDebug() << "could not bind the discovery socket:" << socket->errorString();
+    }
+#endif
     // Qt 4.7 has no pointer-to-member connect.
     connect(socket, SIGNAL(readyRead()), this, SLOT(readPendingDatagrams()));
     connect(this, SIGNAL(favouritesChanged()), this, SLOT(cleanUpdate()));
