@@ -8,10 +8,11 @@
 //
 // With an address it asks that printer for its attributes instead, which is
 // the rest of the path: the worker thread, curl, the IPP parser and the JSON
-// stand-ins, all on the device.
+// stand-ins, all on the device. With a file as well it prints it, which is
+// the only way to watch a job go out without driving the app by hand.
 //
 // Build it with "meego/build.sh probe" and copy it to the device:
-//   ./discovery_probe [seconds] [ipp://host/path]
+//   ./discovery_probe [seconds] [ipp://host/path] [file]
 #include <QCoreApplication>
 #include <QStringList>
 #include <QTimer>
@@ -22,16 +23,26 @@
 #include <src/ippdiscovery.h>
 #include <src/ippprinter.h>
 
+// The worker thread is reached through queued connections, which refuse to
+// carry a type Qt has not been told about -- without these the request is
+// simply never made and the printer stays silent.
+Q_DECLARE_METATYPE(CURLcode)
+Q_DECLARE_METATYPE(Bytestream)
+Q_DECLARE_METATYPE(PrintParameters)
+
 class Watcher : public QObject
 {
     Q_OBJECT
 
 public:
-    Watcher(int seconds, const QString& url = QString()) : _left(seconds), _printer(0)
+    Watcher(int seconds, const QString& url = QString(), const QString& file = QString(),
+            const QString& format = QString())
+        : _left(seconds), _printer(0), _file(file), _format(format), _printing(false)
     {
         if(!url.isEmpty())
         {
             _printer = new IppPrinter();
+            connect(_printer, SIGNAL(jobFinished(bool)), this, SLOT(jobFinished(bool)));
             _printer->setUrl(url);
         }
         connect(&_timer, SIGNAL(timeout()), this, SLOT(tick()));
@@ -44,6 +55,20 @@ public:
         _timer.start(1000);
     }
 
+public slots:
+    void jobFinished(bool status)
+    {
+        std::cout << "job finished, status " << (status ? "ok" : "failed") << std::endl;
+        const QVariantMap jobAttrs = _printer->jobAttrs();
+        for(const QString& key : jobAttrs.keys())
+        {
+            std::cout << "    " << qPrintable(key) << ": "
+                      << qPrintable(jobAttrs.value(key).toMap().value("value").toString())
+                      << std::endl;
+        }
+        QCoreApplication::quit();
+    }
+
 private slots:
     void tick()
     {
@@ -51,6 +76,38 @@ private slots:
         {
             const QVariantMap attrs = _printer->attrs();
             std::cout << "[" << _left << "s] " << attrs.size() << " attribute(s)";
+            if(!attrs.isEmpty() && !_file.isEmpty() && !_printing)
+            {
+                // The attributes are in; print the file with the printer's
+                // own defaults, exactly as the busy page does.
+                _printing = true;
+                QVariantMap jobParams;
+                if(!_format.isEmpty())
+                {
+                    // What the settings page calls the transfer format. Left
+                    // out, SeaPrint tells the printer application/octet-stream
+                    // and lets it work the format out for itself.
+                    QVariantMap value;
+                    value.insert("tag", int(IppMsg::MimeMediaType));
+                    value.insert("value", _format);
+                    jobParams.insert("document-format", value);
+                }
+                std::cout << "printing " << qPrintable(_file)
+                          << (_format.isEmpty() ? " (format: auto)"
+                                                : qPrintable(" (format: " + _format + ")"))
+                          << std::endl;
+                _printer->print(jobParams, _file);
+                return;
+            }
+            if(_printing)
+            {
+                std::cout << "[" << _left << "s] waiting for the job" << std::endl;
+                if(--_left <= 0)
+                {
+                    QCoreApplication::quit();
+                }
+                return;
+            }
             if(!attrs.isEmpty())
             {
                 std::cout << "\n    printer-name: "
@@ -90,6 +147,9 @@ private:
     QTimer _timer;
     int _left;
     IppPrinter* _printer;
+    QString _file;
+    QString _format;
+    bool _printing;
 };
 
 int main(int argc, char* argv[])
@@ -98,10 +158,18 @@ int main(int argc, char* argv[])
     app.setOrganizationName("net.attah");
     app.setApplicationName("harbour-seaprint");
 
+    qRegisterMetaType<CURLcode>("CURLcode");
+    qRegisterMetaType<Bytestream>("Bytestream");
+    qRegisterMetaType<PrintParameters>("PrintParameters");
+    qRegisterMetaType<IppMsg>("IppMsg");
+    qRegisterMetaType<QMargins>("QMargins");
+
     const int seconds = argc > 1 ? QString::fromLocal8Bit(argv[1]).toInt() : 10;
     const QString url = argc > 2 ? QString::fromLocal8Bit(argv[2]) : QString();
+    const QString file = argc > 3 ? QString::fromLocal8Bit(argv[3]) : QString();
+    const QString format = argc > 4 ? QString::fromLocal8Bit(argv[4]) : QString();
 
-    Watcher watcher(seconds, url);
+    Watcher watcher(seconds, url, file, format);
     if(url.isEmpty())
     {
         IppDiscovery::instance()->discover();

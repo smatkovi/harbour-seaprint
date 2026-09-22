@@ -671,6 +671,22 @@ void IppPrinter::print(QVariantMap jobAttrsMap, QString filename)
     targetFormat = targetFormatIfAuto(targetFormat, mimeType, supportedMimeTypes);
     qDebug() << "adjusted target format:" << targetFormat;
 
+    // "Auto" is spelled application/octet-stream, which asks the printer to
+    // work the format out for itself. A printer that never offered that
+    // format may take such a job and then sit on it: an HP LaserJet 400 held
+    // one for half an hour before printing it, while the same job with
+    // document-format=application/pdf came out at once. So if the printer did
+    // not say it can auto-sense, tell it what the data actually is -- which is
+    // known by now, because that is what the conversion is about to produce.
+    if(jobOpAttrs["document-format"].toObject()["value"].toString() == Mimer::OctetStream &&
+       !supportedMimeTypes.contains(Mimer::OctetStream))
+    {
+        qDebug() << "printer does not offer" << Mimer::OctetStream
+                 << "- asking for" << targetFormat << "instead";
+        jobOpAttrs.insert("document-format",
+                          QJsonObject {{"tag", IppMsg::MimeMediaType}, {"value", targetFormat}});
+    }
+
     if(targetFormat == "" || targetFormat == Mimer::OctetStream)
     {
         emit convertFailed(tr("Unknown document format"));
