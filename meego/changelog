@@ -1,3 +1,11 @@
+harbour-seaprint (1.3.4-meego2) unstable; urgency=low
+
+  * The launcher icon is now built inside the tree: meego/icons/make-icon.py
+    cuts the Sailfish artwork to the exact silhouette of the stock apps,
+    taken from a stock icon's alpha channel, drawn at 4x and scaled down.
+
+ -- Sebastian Matkovich <sebastian.matkovich@gmail.com>  Sat, 26 Sep 2026 14:00:00 +0000
+
 harbour-seaprint (1.3.4-meego1) unstable; urgency=low
 
   * First MeeGo Harmattan edition, from upstream 1.3.4.

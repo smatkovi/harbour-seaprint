@@ -44,8 +44,9 @@ rm -rf "$STAGE/opt/harbour-seaprint/qml/hand"
 cp -a "$OUT/arm/translations" "$STAGE/opt/harbour-seaprint/translations"
 
 # --- icons: 80x80 for the launcher, 64x64 base64 for the package manager ---
-# Both are cut to the exact silhouette of the stock apps by
-# meego-icon-tool/squircle.py --fill; do not rescale the Sailfish icon here.
+# Both are cut to the exact silhouette of the stock apps -- rebuild them with
+# meego/icons/make-icon.py, which takes the Sailfish artwork and the alpha
+# channel of a stock icon; do not just rescale the Sailfish icon here.
 cp "$PKG/icons/icon-80.png" "$STAGE/usr/share/icons/hicolor/80x80/apps/harbour-seaprint.png"
 cp "$PKG/icons/icon-80.png" "$STAGE/usr/share/themes/base/meegotouch/icons/harbour-seaprint-80.png"
 
