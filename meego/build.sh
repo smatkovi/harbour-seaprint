@@ -51,6 +51,7 @@ APP_SRC="src/dbusadaptorbase.cpp \
  ppm2pwg/lib/ppm2pwg.cpp \
  ppm2pwg/lib/pdf2printable.cpp \
  ppm2pwg/lib/baselinify.cpp \
+ ppm2pwg/lib/rgb2jpeg.cpp \
  ppm2pwg/lib/curlrequester.cpp \
  ppm2pwg/bytestream/bytestream.cpp \
  meego/main.cpp \
@@ -85,14 +86,21 @@ MOC_HEADERS="src/convertchecker.h \
  meego/compat/mgconfitem.h"
 
 TOOLS_SRC="ppm2pwg/lib/printparameters.cpp ppm2pwg/lib/ppm2pwg.cpp \
- ppm2pwg/lib/pdf2printable.cpp ppm2pwg/lib/baselinify.cpp \
+ ppm2pwg/lib/pdf2printable.cpp ppm2pwg/lib/baselinify.cpp ppm2pwg/lib/rgb2jpeg.cpp \
  ppm2pwg/lib/curlrequester.cpp ppm2pwg/bytestream/bytestream.cpp"
 
 INCLUDES="-I$HERE -I$HERE/src -I$HERE/ppm2pwg/lib -I$HERE/ppm2pwg/bytestream \
  -I$HERE/meego -I$HERE/meego/compat -I$HERE/meego/compat/cairo -I$HERE/meego/compat/poppler"
 
+# MAX_RASTER_DPI: what this device can draw, which is less than what the
+# printer can take. The N9's poppler (0.16) silently leaves a page-sized image
+# out above 300 dpi -- measured with the same page at 150/300/600 dpi, where
+# the cover photo is there up to 300 and gone at 600, on the device as well as
+# under qemu with the device's libraries, while a current poppler renders it
+# fine. So raster is drawn at 300 dpi here and the printer is told so.
 DEFINES="-DSEAPRINT_VERSION='\"$VERSION\"' -DPDF_CREATOR='\"SeaPrint $VERSION\"' -DMADNESS=1 -DQT_NO_DEBUG \
- -DCONVERT_IN_CHILD=1"
+ -DCONVERT_IN_CHILD=1 \
+ -DMAX_RASTER_DPI=300"
 
 # -Wno-register and friends: Qt 4.7 headers and libjpeg 6b are older than the
 # language the rest is compiled as.

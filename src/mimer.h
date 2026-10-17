@@ -24,6 +24,8 @@ public:
     QString getPWG() const {return PWG;}
     Q_PROPERTY(QString URF READ getURF CONSTANT)
     QString getURF() const {return URF;}
+    Q_PROPERTY(QString PCLm READ getPCLm CONSTANT)
+    QString getPCLm() const {return PCLm;}
 
     Q_PROPERTY(QString PNG READ getPNG CONSTANT)
     QString getPNG() const {return PNG;}
@@ -66,6 +68,7 @@ public:
     static const QString Postscript;
     static const QString PWG;
     static const QString URF;
+    static const QString PCLm;
 
     static const QString PNG;
     static const QString GIF;

@@ -1,3 +1,34 @@
+harbour-seaprint (1.3.4-meego5) unstable; urgency=low
+
+  * PCLm, the format a printer takes strip by strip. An HP LaserJet 400 with
+    384 MB ran out of memory on eight colour pages of a magazine as PDF, and
+    the same pages as PCLm print: the printer never holds more than sixteen
+    rows at a time, and nor does this side -- the page is rendered in bands of
+    a few hundred rows, cut into strips, each strip compressed as JPEG. An A4
+    page at 600 dpi is 104 MB as one raster; a band is eight, and the whole
+    conversion peaked at 34 MB on the N950 (meego/tests/print-watch.sh).
+    pdf_to_pclm() in ppm2pwg does the writing, rgb2jpeg.cpp the compression.
+  * Four things this printer taught us, all of them measured:
+    - application/PCLm is rejected with client-error-bad-request unless the
+      job carries pclm-source-resolution, which is why adjustPclmSettings()
+      puts it there; the spelling has to be exactly "application/PCLm".
+    - The printer offers 600 dpi, and this device's poppler (0.16) silently
+      leaves a page-sized photo out above 300 -- so raster is drawn at 300 dpi
+      here (MAX_RASTER_DPI) and the printer is told so. It accepts that.
+    - PCLm is made into a file first and sent when it is whole: the printer
+      reads it as it arrives and will not wait for the next band. One second
+      of silence after the page object and it answers 500 and hangs up, seen
+      byte for byte with meego/tests/ipp-relay.py.
+    - Big jobs have to be sent chunked; with a Content-Length of a few
+      megabytes the printer does not answer at all.
+  * New tools in the tree: meego/tests/make-pclm.py writes a PCLm with nothing
+    but Python (the prototype that proved the shape), ipp-sink.py is an IPP
+    printer that only writes down what it is sent, ipp-relay.py sits between
+    the app and a real printer and keeps the timing, send-ipp.py prints a file
+    without the app at all.
+
+ -- Sebastian Matkovich <sebastian.matkovich@gmail.com>  Sat, 17 Oct 2026 09:00:00 +0000
+
 harbour-seaprint (1.3.4-meego4) unstable; urgency=low
 
   * The conversion runs in a process of its own. A big scanned PDF peaks at

@@ -2,7 +2,7 @@
 # Prints a file with the probe and writes down what it costs in memory -- to be
 # run ON THE DEVICE, next to the probe (meego/remote-build.sh probe):
 #
-#   sh print-watch.sh ipp://<host>[:port]/<rp> <datei> [format]
+#   sh print-watch.sh ipp://<host>[:port]/<rp> <datei> [format] [seiten]
 #
 # The device has about 70 MB to spare, and the conversion is the one step that
 # can ask for more than that, so a print that ends with the app simply gone
@@ -16,12 +16,13 @@
 URL=$1
 FILE=$2
 FORMAT=$3
+PAGES=$4
 PROBE=${PROBE:-./discovery_probe}
 LOG=${LOG:-print-watch.log}
 
-[ -n "$URL" ] && [ -n "$FILE" ] || { echo "usage: $0 <ipp-url> <datei> [format]" >&2; exit 2; }
+[ -n "$URL" ] && [ -n "$FILE" ] || { echo "usage: $0 <ipp-url> <datei> [format] [seiten]" >&2; exit 2; }
 
-"$PROBE" 180 "$URL" "$FILE" $FORMAT > "$LOG" 2>&1 &
+"$PROBE" 180 "$URL" "$FILE" $FORMAT $PAGES > "$LOG" 2>&1 &
 PID=$!
 
 peak=0

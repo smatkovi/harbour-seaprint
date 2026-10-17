@@ -12,7 +12,8 @@ function supported_formats(printer, considerAdditionalFormats)
         formats=formats+printer.additionalDocumentFormats;
     }
 
-    var raster = (has(formats, Mimer.Mimer.PWG) || has(formats, Mimer.Mimer.URF));
+    // PCLm counts as raster here as well: it is pixels, just in strips.
+    var raster = (has(formats, Mimer.Mimer.PWG) || has(formats, Mimer.Mimer.URF) || has(formats, Mimer.Mimer.PCLm));
 
     var mimetypes = [];
     var pdf = false;
@@ -259,6 +260,8 @@ function ippName(name, value, printerStrings)
             return qsTr("auto-sense");
         case Mimer.Mimer.PDF:
             return qsTr("PDF");
+        case Mimer.Mimer.PCLm:
+            return qsTr("PCLm (strips)");
         case Mimer.Mimer.Postscript:
             return qsTr("Postscript");
         case Mimer.Mimer.Plaintext:
@@ -396,7 +399,7 @@ function endsWith(ending, string)
     return string.lastIndexOf(ending) == (string.length - ending.length);
 }
 
-var pdfTargets = [Mimer.Mimer.OctetStream, Mimer.Mimer.PDF, Mimer.Mimer.Postscript, Mimer.Mimer.PWG, Mimer.Mimer.URF];
+var pdfTargets = [Mimer.Mimer.OctetStream, Mimer.Mimer.PDF, Mimer.Mimer.Postscript, Mimer.Mimer.PCLm, Mimer.Mimer.PWG, Mimer.Mimer.URF];
 
 
 function canConvertPdfTo(type)
@@ -430,7 +433,7 @@ function canConvertSvgTo(type)
 function canConvertImageTo(type)
 {
     var targets = [Mimer.Mimer.OctetStream, Mimer.Mimer.JPEG, Mimer.Mimer.PNG, Mimer.Mimer.RBMP,
-                   Mimer.Mimer.PWG, Mimer.Mimer.URF, Mimer.Mimer.PDF, Mimer.Mimer.Postscript];
+                   Mimer.Mimer.PCLm, Mimer.Mimer.PWG, Mimer.Mimer.URF, Mimer.Mimer.PDF, Mimer.Mimer.Postscript];
     return has(targets, type)
 }
 

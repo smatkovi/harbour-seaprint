@@ -7,6 +7,9 @@ const QString Mimer::PDF = "application/pdf";
 const QString Mimer::Postscript = "application/postscript";
 const QString Mimer::PWG = "image/pwg-raster";
 const QString Mimer::URF = "image/urf";
+// Spelled exactly like this: the printer that offers it rejects any other
+// capitalisation with client-error-document-format-not-supported.
+const QString Mimer::PCLm = "application/PCLm";
 
 const QString Mimer::PNG = "image/png";
 const QString Mimer::GIF = "image/gif";

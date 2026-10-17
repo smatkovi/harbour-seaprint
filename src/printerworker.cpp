@@ -371,12 +371,89 @@ void PrinterWorker::fixupPlaintext(QString filename, Bytestream header)
     awaitResult(cr, "printRequestFinished");
 }
 
+// PCLm is made into a file first and sent when it is whole.
+//
+// A printer reads PCLm as it arrives -- that is the point of the format -- and
+// this one will not wait: a page announces its strips, and when the first band
+// is still being rendered a second later, an HP LaserJet 400 answers HTTP 500
+// and hangs up (seen byte by byte with meego/tests/ipp-relay.py: 14 kB of page
+// object out at 0.1 s, "500 Internal Server Error" back at 1.08 s). The same
+// document sent in one go prints without a murmur.
+//
+// A page is one to three megabytes, which the cache directory holds easily,
+// and the conversion still runs in its own process -- so this costs a file and
+// some waiting, not memory.
+void PrinterWorker::convertPdfAsPclm(QString filename, Bytestream header, PrintParameters Params)
+{
+    bool ignoreSslErrors = Settings::instance()->ignoreSslErrors();
+    bool verbose = QLoggingCategory::defaultCategory()->isDebugEnabled();
+
+    QTemporaryFile pclmFile;
+    if(!pclmFile.open())
+    { // TMPDIR points at the app's own cache directory; see meego/main.cpp.
+        throw ConvertFailedException(tr("Could not make a temporary file"));
+    }
+
+    WriteFun writeFun([&pclmFile](unsigned char const* buf, unsigned int len) -> bool
+             {
+               if(len == 0)
+                   return true;
+               return pclmFile.write((const char*)buf, len) == (qint64)len;
+             });
+
+    ProgressFun progressFun([this](size_t page, size_t total) -> void
+                {
+                  emit progress(page, total);
+                });
+
+    QString error;
+#ifdef CONVERT_IN_CHILD
+    const bool converted = convertInChildProcess(filename, Params, verbose,
+                                                 writeFun, progressFun, &error);
+#else
+    const bool converted = pdf_to_printable(filename.toStdString(), writeFun, Params,
+                                            progressFun, verbose) == 0;
+    if(!converted)
+    {
+        error = tr("Conversion failed");
+    }
+#endif
+    if(!converted)
+    {
+        throw ConvertFailedException(error);
+    }
+
+    pclmFile.flush();
+    pclmFile.seek(0);
+    qDebug() << "PCLm ready:" << pclmFile.size() << "bytes, sending";
+
+    emit busyMessage(tr("Printing"));
+
+    CurlIppStreamer cr(_url.toString().toStdString(), ignoreSslErrors, verbose);
+    OK(cr.write((char*)header.raw(), header.size()));
+    while(!pclmFile.atEnd())
+    {
+        QByteArray chunk = pclmFile.read(64*1024);
+        OK(cr.write(chunk.constData(), chunk.size()));
+    }
+
+    awaitResult(cr, "printRequestFinished");
+    qDebug() << "Finished";
+}
+
 void PrinterWorker::convertPdf(QString filename, Bytestream header, PrintParameters Params)
 {
     emit busyMessage(tr("Printing"));
 
     bool ignoreSslErrors = Settings::instance()->ignoreSslErrors();
     bool verbose = QLoggingCategory::defaultCategory()->isDebugEnabled();
+
+    if(Params.format == PrintParameters::PCLm)
+    { // Made first, sent afterwards -- see convertPdfAsPclm().
+        convertPdfAsPclm(filename, header, Params);
+        return;
+    }
+
     CurlIppStreamer cr(_url.toString().toStdString(), ignoreSslErrors, verbose);
 
     OK(cr.write((char*)header.raw(), header.size()));
@@ -507,8 +584,10 @@ void PrinterWorker::convertImage(QString filename, Bytestream header, PrintParam
     }
 
 
-    if(Params.format == PrintParameters::PDF || Params.format == PrintParameters::Postscript)
-    {
+    if(Params.format == PrintParameters::PDF || Params.format == PrintParameters::Postscript ||
+       Params.format == PrintParameters::PCLm)
+    { // PCLm is made from a PDF as well -- the strips are cut out of the
+      // rendered page, which pdf_to_pclm does on its own.
         QTemporaryFile tmpPdfFile;
         tmpPdfFile.open();
         QPdfWriter pdfWriter(tmpPdfFile.fileName());

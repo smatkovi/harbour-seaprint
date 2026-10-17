@@ -137,6 +137,8 @@ private:
 
     void capRasterResolutionToMemory(PrintParameters& Params);
 
+    void adjustPclmSettings(QJsonObject& jobAttrs, PrintParameters& Params);
+
     bool isAllowedAddress(QUrl addr);
 
     QJsonValue getAttrOrDefault(QJsonObject jobAttrs, QString name, QString subkey = "");
