@@ -7,6 +7,7 @@
 #   meego/remote-build.sh            # build + package
 #   meego/remote-build.sh build      # only the ARM binary
 #   meego/remote-build.sh tools      # pdf2printable/ippposter for the qemu tests
+#   meego/remote-build.sh probe      # the app without its UI, to run on the device
 #   meego/remote-build.sh x86        # only the desktop (Qt Simulator) build
 set -e
 HERE=$(cd "$(dirname "$0")/.." && pwd)
@@ -43,6 +44,16 @@ build)
     exit 0 ;;
 tools)
     ssh "$HOST" "cd $REMOTE && sh meego/build.sh tools"
+    exit 0 ;;
+probe)
+    # The app without its user interface, for the device: mDNS and a real
+    # print job can only be tried where the phone's network is.
+    ssh "$HOST" "cd $REMOTE && sh meego/build.sh probe"
+    # build.sh names every binary it links after the app; this one is the
+    # probe, so it is fetched under the name it is called by on the device.
+    rsync -a --partial "$HOST:$REMOTE/build/meego/probe/harbour-seaprint" \
+        "$HOME/ps/rpms/seaprint/discovery_probe"
+    echo "== fetched discovery_probe into $HOME/ps/rpms/seaprint/"
     exit 0 ;;
 x86)
     ssh "$HOST" "cd $REMOTE && sh meego/build.sh x86"

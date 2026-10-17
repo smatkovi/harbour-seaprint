@@ -3,6 +3,7 @@
 #include <QStringListModel>
 #include <QUdpSocket>
 #include <QMutex>
+#include <QTimer>
 #include "bytestream.h"
 
 class IppDiscovery : public  QStringListModel
@@ -36,6 +37,7 @@ public slots:
     void readPendingDatagrams();
     void cleanUpdate();
     void update();
+    void askAgain();
 
 protected:
 private:
@@ -54,6 +56,9 @@ private:
 
     void updateAndQueryPtrs(QStringList& ptrs, QStringList new_ptrs);
 
+    void sendServiceQuery();
+    bool queryWhatIsMissing();
+
     QStringList _ipp;
     QStringList _ipps;
     QMap<QString,QString> _rps;
@@ -67,6 +72,15 @@ private:
 
     QStringList _favourites;
     QUdpSocket* socket;
+
+    // One query and one answer is one UDP packet each, and multicast over
+    // wifi loses some: on the N950 about one question in ten went unanswered,
+    // and a printer only appears in the list once four exchanges in a row
+    // (PTR, TXT, SRV, A) have come back. So the queries are repeated, with
+    // the backoff of RFC 6762 section 5.2, until nothing is missing.
+    QTimer _askAgainTimer;
+    int _askAgainLeft;
+    int _askAgainInterval;
 };
 
 #endif // IPPDISCOVERY_H

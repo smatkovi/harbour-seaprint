@@ -64,6 +64,11 @@ IppDiscovery::IppDiscovery() : QStringListModel()
     connect(socket, SIGNAL(readyRead()), this, SLOT(readPendingDatagrams()));
     connect(this, SIGNAL(favouritesChanged()), this, SLOT(cleanUpdate()));
     _transactionid = 0;
+
+    _askAgainTimer.setSingleShot(true);
+    _askAgainLeft = 0;
+    _askAgainInterval = 0;
+    connect(&_askAgainTimer, SIGNAL(timeout()), this, SLOT(askAgain()));
 }
 
 IppDiscovery::~IppDiscovery() {
@@ -89,6 +94,24 @@ IppDiscovery* IppDiscovery::instance()
 }
 
 void IppDiscovery::discover() {
+    // Asking is the user's doing -- the page opening, or a tap on Refresh --
+    // so the one-second guard in sendQuery() must not swallow it. It is there
+    // to keep one burst of answers from asking the same thing over and over,
+    // not to ignore the person holding the phone.
+    _outstandingQueries.clear();
+
+    sendServiceQuery();
+
+    // Then keep asking for what has not come back: 1 s, 2 s, 4 s, 8 s. A
+    // single round of queries left the list empty whenever one packet went
+    // astray, and nothing ever asked again -- which is what made the printer
+    // appear only now and then.
+    _askAgainLeft = 4;
+    _askAgainInterval = 1000;
+    _askAgainTimer.start(_askAgainInterval);
+}
+
+void IppDiscovery::sendServiceQuery() {
     // Not a braced list: Qt 4.7's QList has no initializer-list constructor.
     QStringList services;
     services << "_ipp._tcp.local";
@@ -105,8 +128,78 @@ void IppDiscovery::discover() {
     sendQuery(PTR, services);
 }
 
+void IppDiscovery::askAgain() {
+    // A deliberate repetition, so the guard in sendQuery() is cleared first:
+    // at exactly one second it is a coin toss whether an entry counts as old
+    // enough, and a retry that turns into "nothing to do" is no retry.
+    _outstandingQueries.clear();
+
+    bool missing = queryWhatIsMissing();
+
+    if(missing && --_askAgainLeft > 0)
+    {
+        _askAgainInterval *= 2;
+        _askAgainTimer.start(_askAgainInterval);
+    }
+}
+
+// Asks about every step that has not been answered yet, and says whether
+// there was anything left to ask about at all.
+bool IppDiscovery::queryWhatIsMissing() {
+    if(_ipp.isEmpty() && _ipps.isEmpty())
+    { // Not a single service has answered, so start over from the service query
+        sendServiceQuery();
+        return true;
+    }
+
+    bool missing = false;
+
+    QStringList ptrs = _ipp;
+    for(QString ptr : _ipps)
+    {
+        if(!ptrs.contains(ptr))
+        {
+            ptrs.append(ptr);
+        }
+    }
+
+    for(QString ptr : ptrs)
+    {
+        if(!_rps.contains(ptr))
+        {
+            missing = true;
+            sendQuery(TXT, QStringList(ptr));
+        }
+        if(!_targets.contains(ptr) || !_ports.contains(ptr))
+        {
+            missing = true;
+            sendQuery(SRV, QStringList(ptr));
+        }
+    }
+
+    QStringList unresolved;
+    for(QMap<QString,QString>::ConstIterator it = _targets.begin(); it != _targets.end(); it++)
+    {
+        if(!_AAs.contains(it.value()) && !unresolved.contains(it.value()))
+        {
+            unresolved.append(it.value());
+        }
+    }
+    if(!unresolved.empty())
+    {
+        missing = true;
+        sendQuery(A, unresolved);
+    }
+
+    return missing;
+}
+
 void IppDiscovery::reset() {
     _ipp.clear();
+    // The encrypted half was left behind here, so after a change of network
+    // its services were still remembered -- and askAgain() would take them
+    // for an answer and not ask for the services again.
+    _ipps.clear();
     _rps.clear();
     _ports.clear();
     _targets.clear();
@@ -416,8 +509,13 @@ void IppDiscovery::readPendingDatagrams()
         }
         catch(const std::exception& e)
         {
+            // Just this datagram, not the whole mailbox: Qt 4 raises
+            // readyRead() when something arrives, not while something is
+            // still waiting, so leaving here would have left every datagram
+            // behind it unread until the next one happened to come in -- one
+            // answer from an unrelated device could stall the search.
             qDebug() << e.what();
-            return;
+            continue;
         }
         qDebug() << "new ipp ptrs" << new_ipp_ptrs;
         qDebug() << "new ipps ptrs" << new_ipps_ptrs;
