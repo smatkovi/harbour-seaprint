@@ -384,7 +384,12 @@ QString targetFormatIfAuto(QString documentFormat, QString mimeType, QJsonArray 
 {
     if(documentFormat == Mimer::OctetStream)
     {
-        QStringList PdfPrioList = {Mimer::PDF, Mimer::Postscript, Mimer::PWG, Mimer::URF};
+        // PCLm before the page-sized raster formats: a printer takes it a
+        // strip at a time, and so does the conversion -- where PWG and URF
+        // need a whole page in memory at once. Behind PDF and Postscript,
+        // which stay sharper and smaller where a printer can digest them.
+        QStringList PdfPrioList = {Mimer::PDF, Mimer::Postscript, Mimer::PCLm,
+                                   Mimer::PWG, Mimer::URF};
         if(mimeType == Mimer::PDF)
         {
             return firstMatch(supportedMimeTypes, PdfPrioList);
@@ -422,8 +427,55 @@ QString targetFormatIfAuto(QString documentFormat, QString mimeType, QJsonArray 
     return documentFormat;
 }
 
+// PCLm is raster too, but of another shape: the printer takes it strip by
+// strip, so what counts here is the strip height it asks for and a resolution
+// it will accept -- and that the resolution travels in the job. A printer that
+// offers PCLm and is sent a job without pclm-source-resolution answers
+// client-error-bad-request (measured on an HP LaserJet 400 color M451nw).
+void IppPrinter::adjustPclmSettings(QJsonObject& jobAttrs, PrintParameters& Params)
+{
+    jobAttrs.remove("printer-resolution");
+
+    int stripHeight = _attrs["pclm-strip-height-preferred"].toObject()["value"].toInt();
+    if(stripHeight > 0)
+    {
+        Params.stripHeight = stripHeight;
+    }
+
+    quint32 resolution = 0;
+    for(QJsonValue res : _attrs["pclm-source-resolution-supported"].toObject()["value"].toArray())
+    {
+        QJsonObject resObj = res.toObject();
+        // Only dpi, and only square pixels: a strip is as wide as the page and
+        // is placed by its own size.
+        if(resObj["units"].toInt() != 3 || resObj["x"].toInt() != resObj["y"].toInt())
+        {
+            continue;
+        }
+        resolution = std::max(resolution, (quint32)resObj["x"].toInt());
+    }
+    if(resolution == 0)
+    {
+        resolution = std::min(Params.hwResW, Params.hwResH);
+    }
+
+    Params.hwResW = Params.hwResH = resolution;
+
+    jobAttrs.insert("pclm-source-resolution",
+                    QJsonObject {{"tag", IppMsg::Resolution},
+                                 {"value", QJsonObject {{"x", (int)resolution},
+                                                        {"y", (int)resolution},
+                                                        {"units", 3}}}});
+}
+
 void IppPrinter::adjustRasterSettings(QString filename, QString mimeType, QJsonObject& jobAttrs, PrintParameters& Params)
 {
+    if(Params.format == PrintParameters::PCLm)
+    {
+        adjustPclmSettings(jobAttrs, Params);
+        return;
+    }
+
     if(Params.format != PrintParameters::PWG && Params.format != PrintParameters::URF)
     {
         return;
@@ -684,6 +736,10 @@ void IppPrinter::print(QJsonObject jobAttrs, QString filename)
     else if(targetFormat == Mimer::URF)
     {
         Params.format = PrintParameters::URF;
+    }
+    else if(targetFormat == Mimer::PCLm)
+    {
+        Params.format = PrintParameters::PCLm;
     }
     else
     {

@@ -46,6 +46,7 @@ public:
     static const QString Postscript;
     static const QString PWG;
     static const QString URF;
+    static const QString PCLm;
 
     static const QString PNG;
     static const QString GIF;

@@ -60,6 +60,7 @@ private:
     void printImageAsImage(QString filename, Bytestream header, QString targetFormat);
     void fixupPlaintext(QString filename, Bytestream header);
     void convertPdf(QString filename, Bytestream header, PrintParameters Params);
+    void convertPdfAsPclm(QString filename, Bytestream header, PrintParameters Params);
     void convertImage(QString filename, Bytestream header, PrintParameters Params, QMargins margins);
     void convertOfficeDocument(QString filename, Bytestream header, PrintParameters Params);
     void convertPlaintext(QString filename, Bytestream header, PrintParameters Params);

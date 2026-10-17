@@ -109,6 +109,8 @@ private:
 
     void adjustRasterSettings(QString filename, QString mimeType, QJsonObject& jobAttrs, PrintParameters& Params);
 
+    void adjustPclmSettings(QJsonObject& jobAttrs, PrintParameters& Params);
+
     void setBusyMessage(QString msg);
     void setProgress(qint64 sent, qint64 total);
 
