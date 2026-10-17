@@ -33,6 +33,7 @@
 #include "filebrowser.h"
 #include "ipptags.h"
 #include "tintedimage.h"
+#include "convertproc.h"
 #include "wifichecker.h"
 
 #include <src/convertchecker.h>
@@ -115,6 +116,17 @@ static ConvertChecker* convertCheckerOrNull()
 
 int main(int argc, char *argv[])
 {
+    // Started with --convert, this is the app's own conversion process: no
+    // window, no QML, no printer discovery -- it reads the parameters from
+    // stdin, writes the converted document to stdout and is gone again. See
+    // meego/convertproc.h for why the conversion does not happen in the app
+    // itself. Nothing of Qt's GUI is touched before this returns, so the
+    // child costs a couple of megabytes rather than thirty.
+    if(isConvertChild(argc, argv))
+    {
+        return convertChildMain(argc, argv);
+    }
+
     QApplication app(argc, argv);
 
     // Qt 4 pushes the source text of tr() through Latin-1 unless told

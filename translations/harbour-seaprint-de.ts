@@ -477,6 +477,22 @@ auf diesem Drucker</translation>
 <context>
     <name>PrinterWorker</name>
     <message>
+        <source>Could not start the conversion</source>
+        <translation>Die Umwandlung ließ sich nicht starten</translation>
+    </message>
+    <message>
+        <source>The conversion stopped responding</source>
+        <translation>Die Umwandlung antwortet nicht mehr</translation>
+    </message>
+    <message>
+        <source>Could not send the document</source>
+        <translation>Das Dokument ließ sich nicht senden</translation>
+    </message>
+    <message>
+        <source>The conversion was stopped - the memory was probably not enough</source>
+        <translation>Die Umwandlung wurde abgebrochen – wahrscheinlich fehlte der Speicher</translation>
+    </message>
+    <message>
         <source>Failed to load image</source>
         <translation>Bild konnte nicht geladen werden</translation>
     </message>

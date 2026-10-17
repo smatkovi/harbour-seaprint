@@ -54,6 +54,7 @@ APP_SRC="src/dbusadaptorbase.cpp \
  ppm2pwg/lib/curlrequester.cpp \
  ppm2pwg/bytestream/bytestream.cpp \
  meego/main.cpp \
+ meego/convertproc.cpp \
  meego/wifichecker.cpp \
  meego/tintedimage.cpp \
  meego/themeicons.cpp \
@@ -90,7 +91,8 @@ TOOLS_SRC="ppm2pwg/lib/printparameters.cpp ppm2pwg/lib/ppm2pwg.cpp \
 INCLUDES="-I$HERE -I$HERE/src -I$HERE/ppm2pwg/lib -I$HERE/ppm2pwg/bytestream \
  -I$HERE/meego -I$HERE/meego/compat -I$HERE/meego/compat/cairo -I$HERE/meego/compat/poppler"
 
-DEFINES="-DSEAPRINT_VERSION='\"$VERSION\"' -DPDF_CREATOR='\"SeaPrint $VERSION\"' -DMADNESS=1 -DQT_NO_DEBUG"
+DEFINES="-DSEAPRINT_VERSION='\"$VERSION\"' -DPDF_CREATOR='\"SeaPrint $VERSION\"' -DMADNESS=1 -DQT_NO_DEBUG \
+ -DCONVERT_IN_CHILD=1"
 
 # -Wno-register and friends: Qt 4.7 headers and libjpeg 6b are older than the
 # language the rest is compiled as.

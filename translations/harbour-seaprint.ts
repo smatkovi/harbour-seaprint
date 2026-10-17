@@ -476,6 +476,22 @@
 <context>
     <name>PrinterWorker</name>
     <message>
+        <source>Could not start the conversion</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The conversion stopped responding</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Could not send the document</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The conversion was stopped - the memory was probably not enough</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Failed to load image</source>
         <translation type="unfinished"></translation>
     </message>

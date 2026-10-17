@@ -31,6 +31,10 @@ static QImage applyExifTransform(const QImage& image, const QString&) { return i
 static void setAutoTransform(QImageReader&) {}
 #endif
 
+#ifdef CONVERT_IN_CHILD
+#include "convertproc.h"
+#endif
+
 #define OK(call) if(!(call)) throw ConvertFailedException()
 
 PrinterWorker::PrinterWorker(IppPrinter* parent)
@@ -389,11 +393,33 @@ void PrinterWorker::convertPdf(QString filename, Bytestream header, PrintParamet
                   emit progress(page, total);
                 });
 
-    int res = pdf_to_printable(filename.toStdString(), writeFun, Params, progressFun, verbose);
-
-    if(res != 0)
+    QString error;
+#ifdef CONVERT_IN_CHILD
+    // On a phone with 1 GB of memory the conversion does not fit next to the
+    // user interface, so it runs in a process of its own; see
+    // meego/convertproc.h. Everything else about the job is unchanged -- the
+    // bytes still go straight into the IPP request as they are produced.
+    const bool converted = convertInChildProcess(filename, Params, verbose,
+                                                 writeFun, progressFun, &error);
+#else
+    const bool converted = pdf_to_printable(filename.toStdString(), writeFun, Params,
+                                            progressFun, verbose) == 0;
+    if(!converted)
     {
-        throw ConvertFailedException(tr("Conversion failed"));
+        error = tr("Conversion failed");
+    }
+#endif
+
+    if(!converted)
+    {
+        // Close the request before leaving. The streamer's destructor waits
+        // for curl, and curl waits for the rest of a chunked body that is
+        // never coming -- so a conversion that gives up used to hang the
+        // worker thread, and the busy page stayed up until the app was
+        // killed. This ends the body, lets the printer answer, and only then
+        // reports the failure.
+        cr.await();
+        throw ConvertFailedException(error);
     }
 
     awaitResult(cr, "printRequestFinished");

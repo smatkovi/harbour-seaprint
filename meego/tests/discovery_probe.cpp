@@ -23,6 +23,8 @@
 #include <src/ippdiscovery.h>
 #include <src/ippprinter.h>
 
+#include "convertproc.h"
+
 // The worker thread is reached through queued connections, which refuse to
 // carry a type Qt has not been told about -- without these the request is
 // simply never made and the printer stays silent.
@@ -174,6 +176,15 @@ private:
 
 int main(int argc, char* argv[])
 {
+    // The probe prints through the same worker as the app, and that worker
+    // starts this very binary again to convert (meego/convertproc.h) -- so the
+    // probe has to know the child's arguments too, or it would start itself
+    // over as a second probe.
+    if(isConvertChild(argc, argv))
+    {
+        return convertChildMain(argc, argv);
+    }
+
     QCoreApplication app(argc, argv);
     app.setOrganizationName("net.attah");
     app.setApplicationName("harbour-seaprint");
