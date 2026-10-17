@@ -111,6 +111,7 @@ public slots:
     void print(QVariantMap attrs, QString file);
 
     void onUrlChanged();
+    void retryAttributes();
     void MaybeGetStrings();
     void MaybeGetIcon(bool retry=false);
     void UpdateAdditionalDocumentFormats();
@@ -134,6 +135,8 @@ private:
 
     void adjustRasterSettings(QString filename, QString mimeType, QJsonObject& jobAttrs, PrintParameters& Params);
 
+    void capRasterResolutionToMemory(PrintParameters& Params);
+
     bool isAllowedAddress(QUrl addr);
 
     QJsonValue getAttrOrDefault(QJsonObject jobAttrs, QString name, QString subkey = "");
@@ -155,6 +158,10 @@ private:
     PrinterWorker* _worker;
 
     bool _iconRetried = false;
+
+    // How often a printer that answered with something unusable may be asked
+    // again; see getPrinterAttributesFinished().
+    int _attrsRetriesLeft = 0;
 };
 
 #endif // IPPPRINTER_H

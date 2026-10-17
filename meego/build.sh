@@ -161,6 +161,29 @@ probe)
     LIBS="-lQtDeclarative -lQtDBus -lQtSvg -lQtGui -lQtNetwork -lQtCore -lcurl -lglib-2.0 -lgobject-2.0 -ldl -lpthread"
     APP_SRC=$(echo "$APP_SRC" | sed 's| meego/main.cpp | meego/tests/discovery_probe.cpp |')
     ;;
+parse)
+    # The IPP parser over a saved response, built straight against the SDK's
+    # desktop Qt 4: IppMsg, the Qt 4 JSON stand-ins and Bytestream are all the
+    # device has in that path, and none of them needs ARM or a printer.
+    CXX=${CXX:-g++}
+    PROBEQT=${PROBEQT:-$HOME/QtSDK/Desktop/Qt/4.8.1/gcc}
+    QTINC=$PROBEQT/include
+    # No DEFINES here: this one is compiled straight, not through a Makefile,
+    # and the version strings in them carry quotes the shell would eat.
+    CXXFLAGS="-std=gnu++17 -O2 -Wall -Wno-register -Wno-deprecated-declarations \
+ -Wno-unused-parameter -DQT_NO_DEBUG $INCLUDES -include $HERE/meego/compat/qt4compat.h \
+ -I$QTINC -I$QTINC/QtCore"
+    LDFLAGS="-L$PROBEQT/lib -Wl,-rpath,$PROBEQT/lib"
+    mkdir -p "$OUT"
+    $CXX $CXXFLAGS $LDFLAGS -o "$OUT/ipp_parse_test" \
+        "$HERE/meego/tests/ipp_parse_test.cpp" \
+        "$HERE/src/ippmsg.cpp" \
+        "$HERE/meego/compat/qt4json.cpp" \
+        "$HERE/ppm2pwg/bytestream/bytestream.cpp" \
+        -lQtCore -lpthread
+    echo "== built $OUT/ipp_parse_test (meego/tests/run-parse-test.sh runs it)"
+    exit 0
+    ;;
 check)
     # The QML checker replaces meego/main.cpp and is built against the SDK's
     # plain desktop Qt (4.8.1): the Simulator's Qt 4.7.4 aborts without a
@@ -178,7 +201,7 @@ check)
     LIBS="-lQtDeclarative -lQtDBus -lQtSvg -lQtGui -lQtNetwork -lQtCore -lcurl -lglib-2.0 -lgobject-2.0 -ldl -lpthread"
     ;;
 *)
-    echo "usage: $0 arm|x86|tools|check|probe" >&2; exit 2 ;;
+    echo "usage: $0 arm|x86|tools|check|probe|parse" >&2; exit 2 ;;
 esac
 
 # --- Makefile --------------------------------------------------------------

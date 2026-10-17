@@ -9,6 +9,10 @@
 #include <QRegularExpression>
 #include <QTemporaryFile>
 #include <QFileInfo>
+#include <QTimer>
+#include <QDir>
+#include <QFile>
+#include <QStandardPaths>
 
 Q_DECLARE_METATYPE(QMargins)
 Q_DECLARE_METATYPE(IppMsg)
@@ -89,6 +93,13 @@ void IppPrinter::setUrl(QString url_s)
 void IppPrinter::onUrlChanged()
 {
     QMetaObject::invokeMethod(_worker, "urlChanged", Q_ARG(QUrl, httpUrl()));
+    _attrsRetriesLeft = 2;
+    refresh();
+}
+
+void IppPrinter::retryAttributes()
+{
+    qDebug() << "asking" << _url.toString() << "for its attributes again";
     refresh();
 }
 
@@ -223,7 +234,7 @@ void IppPrinter::UpdateAdditionalDocumentFormats()
 
 void IppPrinter::getPrinterAttributesFinished(CURLcode res, Bytestream data)
 {
-    qDebug() << res;
+    qDebug() << res << data.size() << "bytes";
     _attrs = QJsonObject();
 
     if(res == CURLE_OK)
@@ -238,7 +249,33 @@ void IppPrinter::getPrinterAttributesFinished(CURLcode res, Bytestream data)
         catch(const std::exception& e)
         {
             qDebug() << e.what();
+            // Keep what could not be read, so the next look does not depend
+            // on the printer misbehaving again; meego/tests/run-parse-test.sh
+            // puts the parser through a saved response.
+            const QString dir = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+            const QString path = dir + "/last-unreadable-response.raw";
+            QDir().mkpath(dir);
+            QFile dump(path);
+            if(dump.open(QIODevice::WriteOnly))
+            {
+                dump.write((const char*)data.raw(), data.size());
+                dump.close();
+                qDebug() << "wrote the unreadable answer to" << path;
+            }
         }
+    }
+
+    if(_attrs.isEmpty() && _attrsRetriesLeft > 0)
+    {
+        // A printer that answers nothing useful leaves a nameless row in the
+        // list which nothing ever revisits: the attributes are fetched once,
+        // on the url, and the page would have to be left and opened again.
+        // An HP LaserJet 400 does exactly that now and then -- an empty body
+        // with HTTP 500, which curl reports as a success and the parser as
+        // "Tried to read past end" -- while the very next request is
+        // answered in full. So ask again rather than keeping a dead row.
+        _attrsRetriesLeft--;
+        QTimer::singleShot(1500, this, SLOT(retryAttributes()));
     }
 
     emit attrsChanged();
@@ -427,6 +464,77 @@ QString targetFormatIfAuto(QString documentFormat, QString mimeType, QJsonArray 
     return documentFormat;
 }
 
+// What the system could still give out, in bytes, or 0 if it will not say.
+// MemAvailable is the honest answer, but it only exists from Linux 3.14 on and
+// the N9 runs 2.6.32, where free plus the reclaimable caches is the best
+// estimate to be had.
+static size_t availableMemory()
+{
+    QFile meminfo("/proc/meminfo");
+    if(!meminfo.open(QIODevice::ReadOnly))
+    {
+        return 0;
+    }
+    size_t free = 0, buffers = 0, cached = 0, available = 0;
+    while(!meminfo.atEnd())
+    {
+        // "MemFree:           44988 kB" -- no regular expression, so that the
+        // same lines compile against Qt 4 and Qt 5, which spell the split
+        // flags differently.
+        const QString line = QString::fromLatin1(meminfo.readLine()).trimmed();
+        const int colon = line.indexOf(':');
+        if(colon < 0)
+        {
+            continue;
+        }
+        const QString key = line.left(colon);
+        const size_t kB = line.mid(colon+1).trimmed().section(' ', 0, 0).toULongLong();
+        if(key == "MemAvailable")  available = kB;
+        else if(key == "MemFree")  free = kB;
+        else if(key == "Buffers")  buffers = kB;
+        else if(key == "Cached")   cached = kB;
+    }
+    meminfo.close();
+    return 1024 * (available != 0 ? available : free + buffers + cached);
+}
+
+// A page of raster is one allocation, and a phone can have less memory left
+// than a page needs: A4 at 600 dpi is 4960x7016 pixels, which is 104 MB in
+// colour before the 32-bit surface it is rendered into -- 276 MB peak for the
+// whole conversion, measured with meego/tests/convert-memory.sh, against the
+// 70 MB an N950 in daily use has free. The kernel then takes the app away in
+// the middle of the job, which to the person holding the phone looks like the
+// app quitting by itself, with nothing anywhere to say why. So the resolution
+// is halved while the page does not fit. The raster carries its resolution in
+// its own header, so a coarser page still prints; and where there is memory
+// enough -- any Sailfish device -- this changes nothing at all.
+void IppPrinter::capRasterResolutionToMemory(PrintParameters& Params)
+{
+    const size_t available = availableMemory();
+    if(available == 0)
+    {
+        return;
+    }
+    // Keep something back for the rest of the app: the user interface alone
+    // holds some 35 MB while a job is running.
+    const size_t budget = available > 40*1024*1024 ? available - 40*1024*1024 : available/2;
+
+    while(Params.hwResW > 150 && Params.hwResH > 150)
+    {
+        const size_t pixels = Params.getPaperSizeWInPixels() * Params.getPaperSizeHInPixels();
+        const size_t needed = pixels * (4 + Params.getNumberOfColors());
+        if(needed <= budget)
+        {
+            break;
+        }
+        qDebug() << "a page at" << Params.hwResW << "dpi needs" << needed/(1024*1024)
+                 << "MB and there is room for" << budget/(1024*1024)
+                 << "MB - halving the resolution";
+        Params.hwResW /= 2;
+        Params.hwResH /= 2;
+    }
+}
+
 void IppPrinter::adjustRasterSettings(QString filename, QString mimeType, QJsonObject& jobAttrs, PrintParameters& Params)
 {
     if(Params.format != PrintParameters::PWG && Params.format != PrintParameters::URF)
@@ -488,6 +596,8 @@ void IppPrinter::adjustRasterSettings(QString filename, QString mimeType, QJsonO
             }
         }
     }
+
+    capRasterResolutionToMemory(Params);
 
     if(Params.format == PrintParameters::PWG)
     {
